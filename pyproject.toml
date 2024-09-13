@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "dataintroproject1"
+version = "0.1.0"
+description = "Data science project, prediction of CO2 emissions for next day"
+authors = ["Vilppula <lasse.vilpponen@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
