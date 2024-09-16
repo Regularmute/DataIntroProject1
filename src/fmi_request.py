@@ -115,14 +115,7 @@ if __name__ == "__main__":
 
     df = forecast_query(forecast_places)
     print(df)
-
     fc = fmi_forecast_query("helsinki")
 
-    # print(fc.data)
-
-    # keys = fc.data.keys()
-    # print(type(keys))
-    # for key in keys:
-    #     print(key)
 
 #    print(fc.data.keys())
