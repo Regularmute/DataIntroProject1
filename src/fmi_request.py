@@ -1,3 +1,5 @@
+"""Module for requesting data from FMI API."""
+
 import datetime as dt
 import pandas as pd
 from fmi_config import bbox, stations, timestep, annual_data, annual_data, forecast_places
@@ -6,7 +8,7 @@ from fmiopendata.wfs import download_stored_query
 
 
 def fmi_history_query(start_time, end_time, timestep):
-
+    """Raw query to FMI API for historical weather data."""
     obs = download_stored_query("fmi::observations::weather::multipointcoverage",
                                 args=[f"bbox={bbox}",
                                       "timestep=" + timestep,
@@ -16,6 +18,7 @@ def fmi_history_query(start_time, end_time, timestep):
 
 
 def history_query(start_time, end_time, timestep, stations):
+    """Make pandas DataFrame from historical weather data."""
 
     observations = fmi_history_query(start_time, end_time, timestep)
     data = []
@@ -39,6 +42,8 @@ def history_query(start_time, end_time, timestep, stations):
 
 
 def split_time_intervals(start_time, end_time, interval_hours=48):
+    """Split time interval into smaller intervals.
+    FMI API limits to 168 hours, in practice needs to be shorter due to server load."""
     intervals = []
     current_start = start_time
 
@@ -51,6 +56,7 @@ def split_time_intervals(start_time, end_time, interval_hours=48):
 
 
 def collect_yearly_data(start_time, end_time, timestep, stations):
+    """Collecs historical weather data for a year (or other given interval)."""
     intervals = split_time_intervals(start_time, end_time)
     all_data = pd.DataFrame()
 
@@ -65,16 +71,19 @@ def collect_yearly_data(start_time, end_time, timestep, stations):
 
 
 def save_dataframe_to_csv(df, filename):
+    """History dataframe to CSV"""
     df.to_csv(filename, index=False)
 
 
 def load_dataframe_from_csv(filename):
+    """History dataframe from CSV"""
     return pd.read_csv(filename)
 
 
 def load_test():
+    """driver or tester for loading history data"""
     start_time = dt.datetime(2023, 1, 1, 0, 0, 0)
-    end_time = dt.datetime(2023, 3, 1, 0, 0, 0)
+    end_time = dt.datetime(2023, 12, 31, 0, 0, 0)
 
     temperature_history = collect_yearly_data(
         start_time, end_time, timestep, stations)
@@ -84,6 +93,7 @@ def load_test():
 
 
 def fmi_forecast_query(place):
+    """Raw query to FMI API for forecast data."""
 
     fcst = download_stored_query(f"fmi::forecast::harmonie::surface::point::multipointcoverage&place={place.lower()}",
                                  args=[f"bbox={bbox}"])
@@ -91,6 +101,7 @@ def fmi_forecast_query(place):
 
 
 def forecast_query(places):
+    """Makes pandas DataFrame from forecast data."""
     data = []
     forecasts = {place: fmi_forecast_query(place) for place in places}
 
