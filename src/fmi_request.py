@@ -38,7 +38,7 @@ def history_query(start_time, end_time, timestep, stations):
     return df
 
 
-def split_time_intervals(start_time, end_time, interval_hours=12):
+def split_time_intervals(start_time, end_time, interval_hours=48):
     intervals = []
     current_start = start_time
 
@@ -74,7 +74,7 @@ def load_dataframe_from_csv(filename):
 
 def load_test():
     start_time = dt.datetime(2023, 1, 1, 0, 0, 0)
-    end_time = dt.datetime(2023, 12, 31, 0, 0, 0)
+    end_time = dt.datetime(2023, 3, 1, 0, 0, 0)
 
     temperature_history = collect_yearly_data(
         start_time, end_time, timestep, stations)
@@ -117,5 +117,6 @@ if __name__ == "__main__":
     print(df)
     fc = fmi_forecast_query("helsinki")
 
+    load_test()
 
 #    print(fc.data.keys())

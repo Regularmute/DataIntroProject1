@@ -4,7 +4,7 @@ stations = ["Vantaa Helsinki-Vantaan lentoasema",
             "Liperi Joensuu lentoasema",
             "Jyväskylä lentoasema",
             "Rovaniemi lentoasema AWOS"]
-timestep = "3"
+timestep = "60"
 
 annual_data = "data/annual_weather_data.csv"
 
