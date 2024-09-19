@@ -26,11 +26,13 @@ def history_query(start_time, end_time, timestep, stations):
     for t in observations.data.keys():
         timestamp = pd.to_datetime(t)
         row = {
+            'timestamp': timestamp,
             'year': timestamp.year,
             'month': timestamp.month,
             'day': timestamp.day,
             'hour': timestamp.hour,
-            'minute': timestamp.minute
+            'minute': timestamp.minute,
+            'day_of_week': timestamp.day_name()
         }
         for station in stations:
             station_col = f"{station} temperature"
@@ -41,7 +43,7 @@ def history_query(start_time, end_time, timestep, stations):
     return df
 
 
-def split_time_intervals(start_time, end_time, interval_hours=48):
+def split_time_intervals(start_time, end_time, interval_hours=72):
     """Split time interval into smaller intervals.
     FMI API limits to 168 hours, in practice needs to be shorter due to server load."""
     intervals = []
@@ -83,7 +85,7 @@ def load_dataframe_from_csv(filename):
 def load_test():
     """driver or tester for loading history data"""
     start_time = dt.datetime(2023, 1, 1, 0, 0, 0)
-    end_time = dt.datetime(2023, 12, 31, 0, 0, 0)
+    end_time = dt.datetime(2024, 1, 1, 0, 0, 0)
 
     temperature_history = collect_yearly_data(
         start_time, end_time, timestep, stations)
@@ -108,11 +110,13 @@ def forecast_query(places):
     for t in forecasts[places[0]].data.keys():
         timestamp = pd.to_datetime(t)
         row = {
+            'timestamp': timestamp,
             'year': timestamp.year,
             'month': timestamp.month,
             'day': timestamp.day,
             'hour': timestamp.hour,
-            'minute': timestamp.minute
+            'minute': timestamp.minute,
+            'day_of_week': timestamp.day_name()
         }
         for place in places:
             row[f"{place} temperature"] = forecasts[place].data[t][place]["Air temperature"]["value"]
