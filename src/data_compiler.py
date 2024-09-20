@@ -20,41 +20,49 @@ for var in paths:
     df = pd.read_csv(paths[var], sep=';')
     if 'datasetId' in df.columns:
         df = df.drop(columns='datasetId')    
-    if 'endTime' in df.columns:
+    if 'endTime' in df.columns:depending on performance.
         df = df.drop(columns='endTime')    
     
     df[var] = df[df.columns[1]]
     df = df.drop(df.columns[1], axis=1)
-    df['startTime'] = pd.to_datetime(df['startTime'])
+
+    if 'startTime' in df.columns:
+        df['timestamp'] = pd.to_datetime(df['startTime'])
+    elif 'timestamp' in df.columns:
+        df['timestamp'] = pd.to_datetime(df['startTime'])
     dataframes[var] = df
 
 
-for mon in range(1, 13):
+for mon in range(1, 2):
 
-    for day in range(1,32):
+    for day in range(1,2):
         
         fdf = pd.DataFrame()
 
         for var in dataframes:
             df = dataframes[var]
-            df = df[(df.startTime.dt.month == mon) & (df.startTime.dt.day == day)]
+
+            df = df[(df.timestamp.dt.month == mon) & (df.timestamp.dt.day == day)]
             if df.empty:
                 break
-            df = df.groupby(df.startTime.dt.hour).mean()
+            
+            df['year'] = df['timestamp'].dt.year
+            df['month'] = df['timestamp'].dt.month
+            df['day'] = df['timestamp'].dt.day
+            df['hour'] = df['timestamp'].dt.hour
+            depending on performance.
 
-            df['year'] = df['startTime'].dt.year
-            df['month'] = df['startTime'].dt.month
-            df['day'] = df['startTime'].dt.day
-            df['hour'] = df['startTime'].dt.hour
-            df = df.drop(columns='startTime')
+            df = df.groupby([df.year, df.month, df.day, df.hour]).mean()
 
             if fdf.empty:
                 fdf = df
             else:
                 fdf = pd.merge(fdf, df, on=['year', 'month', 'day', 'hour'])
+
+
         if fdf.empty:
             continue
-        fdf = fdf.set_index(['year', 'month', 'day', 'hour'])
+
         fdf.to_csv('data/data_2023.csv', mode='a', header=headers)
         if headers:
             headers = False
