@@ -40,12 +40,13 @@ for mon in range(1, 13):
             df = df[(df.startTime.dt.month == mon) & (df.startTime.dt.day == day)]
             if df.empty:
                 break
-            df = df.groupby(df.startTime.dt.hour).mean()
-
+            print(df)
             df['year'] = df['startTime'].dt.year
             df['month'] = df['startTime'].dt.month
             df['day'] = df['startTime'].dt.day
             df['hour'] = df['startTime'].dt.hour
+            df = df.groupby(df.hour).mean()
+            print(df)
             df = df.drop(columns='startTime')
 
             if fdf.empty:
