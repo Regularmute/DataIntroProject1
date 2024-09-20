@@ -20,7 +20,7 @@ for var in paths:
     df = pd.read_csv(paths[var], sep=';')
     if 'datasetId' in df.columns:
         df = df.drop(columns='datasetId')    
-    if 'endTime' in df.columns:depending on performance.
+    if 'endTime' in df.columns:
         df = df.drop(columns='endTime')    
     
     df[var] = df[df.columns[1]]
