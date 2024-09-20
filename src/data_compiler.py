@@ -50,7 +50,6 @@ for mon in range(1, 2):
             df['month'] = df['timestamp'].dt.month
             df['day'] = df['timestamp'].dt.day
             df['hour'] = df['timestamp'].dt.hour
-            depending on performance.
 
             df = df.groupby([df.year, df.month, df.day, df.hour]).mean()
 
