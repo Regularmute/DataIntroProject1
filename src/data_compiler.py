@@ -20,11 +20,12 @@ for var in paths:
     df = pd.read_csv(paths[var], sep=';')
     if 'datasetId' in df.columns:
         df = df.drop(columns='datasetId')    
-    if 'endTime' in df.columns:
+    if 'endTime' in df.columns:depending on performance.
         df = df.drop(columns='endTime')    
     
     df[var] = df[df.columns[1]]
     df = df.drop(df.columns[1], axis=1)
+
     if 'startTime' in df.columns:
         df['timestamp'] = pd.to_datetime(df['startTime'])
     elif 'timestamp' in df.columns:
@@ -40,6 +41,7 @@ for mon in range(1, 2):
 
         for var in dataframes:
             df = dataframes[var]
+
             df = df[(df.timestamp.dt.month == mon) & (df.timestamp.dt.day == day)]
             if df.empty:
                 break
@@ -48,7 +50,8 @@ for mon in range(1, 2):
             df['month'] = df['timestamp'].dt.month
             df['day'] = df['timestamp'].dt.day
             df['hour'] = df['timestamp'].dt.hour
-            
+            depending on performance.
+
             df = df.groupby([df.year, df.month, df.day, df.hour]).mean()
 
             if fdf.empty:
@@ -56,8 +59,10 @@ for mon in range(1, 2):
             else:
                 fdf = pd.merge(fdf, df, on=['year', 'month', 'day', 'hour'])
 
+
         if fdf.empty:
             continue
+
         fdf.to_csv('data/data_2023.csv', mode='a', header=headers)
         if headers:
             headers = False
