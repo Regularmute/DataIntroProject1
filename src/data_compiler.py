@@ -25,37 +25,39 @@ for var in paths:
     
     df[var] = df[df.columns[1]]
     df = df.drop(df.columns[1], axis=1)
-    df['startTime'] = pd.to_datetime(df['startTime'])
+    if 'startTime' in df.columns:
+        df['timestamp'] = pd.to_datetime(df['startTime'])
+    elif 'timestamp' in df.columns:
+        df['timestamp'] = pd.to_datetime(df['startTime'])
     dataframes[var] = df
 
 
-for mon in range(1, 13):
+for mon in range(1, 2):
 
-    for day in range(1,32):
+    for day in range(1,2):
         
         fdf = pd.DataFrame()
 
         for var in dataframes:
             df = dataframes[var]
-            df = df[(df.startTime.dt.month == mon) & (df.startTime.dt.day == day)]
+            df = df[(df.timestamp.dt.month == mon) & (df.timestamp.dt.day == day)]
             if df.empty:
                 break
-            print(df)
-            df['year'] = df['startTime'].dt.year
-            df['month'] = df['startTime'].dt.month
-            df['day'] = df['startTime'].dt.day
-            df['hour'] = df['startTime'].dt.hour
-            df = df.groupby(df.hour).mean()
-            print(df)
-            df = df.drop(columns='startTime')
+            
+            df['year'] = df['timestamp'].dt.year
+            df['month'] = df['timestamp'].dt.month
+            df['day'] = df['timestamp'].dt.day
+            df['hour'] = df['timestamp'].dt.hour
+            
+            df = df.groupby([df.year, df.month, df.day, df.hour]).mean()
 
             if fdf.empty:
                 fdf = df
             else:
                 fdf = pd.merge(fdf, df, on=['year', 'month', 'day', 'hour'])
+
         if fdf.empty:
             continue
-        fdf = fdf.set_index(['year', 'month', 'day', 'hour'])
         fdf.to_csv('data/data_2023.csv', mode='a', header=headers)
         if headers:
             headers = False
