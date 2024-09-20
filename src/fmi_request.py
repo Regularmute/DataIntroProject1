@@ -84,8 +84,8 @@ def load_dataframe_from_csv(filename):
 
 def load_test():
     """driver or tester for loading history data"""
-    start_time = dt.datetime(2023, 1, 1, 0, 0, 0)
-    end_time = dt.datetime(2024, 1, 1, 0, 0, 0)
+    start_time = dt.datetime(2023, 11, 1, 0, 0, 0)
+    end_time = dt.datetime(2023, 12, 31, 23, 0, 0)
 
     temperature_history = collect_yearly_data(
         start_time, end_time, timestep, stations)
