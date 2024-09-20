@@ -1,16 +1,19 @@
 [tool.poetry]
 name = "dataintroproject1"
 version = "0.1.0"
-description = "Data science project, prediction of CO2 emissions for next day"
-authors = ["Vilppula <lasse.vilpponen@gmail.com>"]
-license = "MIT"
+description = ""
+authors = ["Your Name <you@example.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.10"
-requests = "^2.32.3"
+python = "^3.12"
 pandas = "^2.2.2"
+dash = "^2.18.1"
+requests = "^2.32.3"
 python-dotenv = "^1.0.1"
+numpy = "^2.1.1"
+fmiopendata = "^0.4.3"
+plotly = "^5.24.1"
 
 
 [build-system]
