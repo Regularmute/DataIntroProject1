@@ -5,6 +5,8 @@ import numpy as np
 import statsmodels.api as sm
 from statsmodels.stats.outliers_influence import variance_inflation_factor
 
+from fmi_config import stations as fmi_stations
+
 alldata2023path = 'data/data_2023.csv'
 
 
@@ -98,6 +100,7 @@ def perform_linear_regression(df, dependent_var):
 
 
 def clean_df(df):
+    df = df.copy()
     df = df.dropna()
     df['day_of_week_sin'] = np.sin(2 * np.pi * df['day'] / 7)
     df['day_of_week_cos'] = np.cos(2 * np.pi * df['day'] / 7)
@@ -105,18 +108,47 @@ def clean_df(df):
     df['hour_sin'] = np.sin(2 * np.pi * df['hour'] / 24)
     df['hour_cos'] = np.cos(2 * np.pi * df['hour'] / 24)
 
-    # df['month'] = df['month'].astype('int')
+    stations = fmi_stations
+    stations = [station + " temperature" for station in stations]
 
-    # for month in range(1, 13):
-    #     df[f'month_{month}'] = (df['month'] == month).astype(int)
+    for station in stations:
+        if station not in df.columns:
+            raise ValueError(
+                f"Station column '{station}' not found in DataFrame")
+
+    df['temperature'] = df[stations].mean(axis=1)
+    df.drop(columns=stations, inplace=True)
+
+    df['export'] = df['production'] - df['consumption']
 
     df['month_sin'] = np.sin(2 * np.pi * df['month'] / 12)
     df['month_cos'] = np.cos(2 * np.pi * df['month'] / 12)
 
-    df.drop(columns=['date', 'day', 'year', 'district', 'hydro',
-            'Vantaa Helsinki-Vantaan lentoasema temperature', 'Vaasa lentoasema temperature',
-                     'Liperi Joensuu lentoasema temperature', 'Rovaniemi lentoasema AWOS temperature',
-                     'production', 'day_of_week', 'month', 'hour', 'month'], inplace=True)
+    # On purpose line-by-line for easier variable selection
+    # Comment out the lines you don't want to drop
+    df.drop(columns=['date'], inplace=True)
+    df.drop(columns=['day'], inplace=True)
+    df.drop(columns=['year'], inplace=True)
+    df.drop(columns=['hour'], inplace=True)
+    df.drop(columns=['month'], inplace=True)
+    df.drop(columns=['day_of_week'], inplace=True)
+
+    # df.drop(columns=['electricity_cost'], inplace=True)
+    df.drop(columns=['production'], inplace=True)
+    df.drop(columns=['consumption'], inplace=True)
+    df.drop(columns=['hydro'], inplace=True)
+    df.drop(columns=['district'], inplace=True)
+    # df.drop(columns=['wind'], inplace=True)
+    # df.drop(columns=['solar prediction'], inplace=True)
+    # df.drop(columns=['hour_sin'], inplace=True)
+    # df.drop(columns=['hour_cos'], inplace=True)
+    # df.drop(columns=['day_of_week_sin'], inplace=True)
+    df.drop(columns=['day_of_week_cos'], inplace=True)
+    # df.drop(columns=['month_sin'], inplace=True)
+    # df.drop(columns=['month_cos'], inplace=True)
+    # df.drop(columns=['CO2'], inplace=True)
+    # df.drop(columns=['export'], inplace=True)
+    # df.drop(columns=['temperature'], inplace=True)
 
     return df
 
@@ -137,19 +169,19 @@ def calculate_vif(df):
 if __name__ == '__main__':
     data2023 = read_full_df(alldata2023path)
     summary2023 = summarize_df(data2023)
-    # print_summary(summary2023)
+
+    print_summary(summary2023)
     data_quality_issues = check_data_quality(data2023)
-    print_data_quality_issues(data_quality_issues)
+    # print_data_quality_issues(data_quality_issues)
 
     data2023 = clean_df(data2023)
-
     summary2023 = summarize_df(data2023)
     print_summary(summary2023)
 
     data_quality_issues = check_data_quality(data2023)
     print_data_quality_issues(data_quality_issues)
 
-    # plot_pairplot(data2023)
+    # # plot_pairplot(data2023)
 
     vif_data = calculate_vif(data2023)
     print("Variance Inflation Factor (VIF):")
