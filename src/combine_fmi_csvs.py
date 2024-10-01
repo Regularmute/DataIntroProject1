@@ -22,7 +22,7 @@ def merge_csv_files(input_folder, output_file):
 
 
 if __name__ == "__main__":
-    input_folder = "data/fmi_parts"
-    output_file = "data/annual_weather_data_2023.csv"
+    input_folder = "data/fmi_pieces"
+    output_file = "data/weather_data_012022_092024.csv"
 
     merge_csv_files(input_folder, output_file)

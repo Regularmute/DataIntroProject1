@@ -8,7 +8,8 @@ from scipy import stats
 from patsy import dmatrices
 from fmi_config import stations as fmi_stations
 from patsy import dmatrices
-
+from sklearn.model_selection import KFold
+from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_percentage_error
 
 from data_test_config import configs
 
@@ -176,6 +177,47 @@ def calculate_vif(df):
     return vif_data
 
 
+def cross_validate_linear_regression(df, dependent_var, k=10):
+    """Perform k-fold cross-validation for linear regression."""
+    df = df.dropna(subset=[dependent_var])
+
+    X = df.drop(columns=[dependent_var])
+    X = sm.add_constant(X)
+    y = df[dependent_var]
+
+    kf = KFold(n_splits=k, shuffle=True, random_state=42)
+    mse_scores = []
+    rmse_scores = []
+    mape_scores = []
+    r2_scores = []
+
+    for train_index, test_index in kf.split(X):
+        X_train, X_test = X.iloc[train_index], X.iloc[test_index]
+        y_train, y_test = y.iloc[train_index], y.iloc[test_index]
+
+        model = sm.OLS(y_train, X_train).fit()
+        y_pred = model.predict(X_test)
+
+        mse_scores.append(mean_squared_error(y_test, y_pred))
+        rmse_scores.append(np.sqrt(mean_squared_error(y_test, y_pred)))
+        mape_scores.append(mean_absolute_percentage_error(y_test, y_pred))
+        r2_scores.append(r2_score(y_test, y_pred))
+
+    mse_scores_str = [f"{score:.4f}" for score in mse_scores]
+    rmse_scores_str = [f"{score:.4f}" for score in rmse_scores]
+    mape_scores_str = [f"{score:.4f}" for score in mape_scores]
+    r2_scores_str = [f"{score:.4f}" for score in r2_scores]
+
+    print(f"Mean Squared Error (MSE) scores: {mse_scores_str}")
+    print(f"Average MSE: {np.mean(mse_scores):.4f}")
+    print(f"Root Mean Squared Error (RMSE) scores: {rmse_scores_str}")
+    print(f"Average RMSE: {np.mean(rmse_scores):.4f}")
+    print(f"Mean Absolute Percentage Error (MAPE) scores: {mape_scores_str}")
+    print(f"Average MAPE: {np.mean(mape_scores):.4f}")
+    print(f"R^2 scores: {r2_scores_str}")
+    print(f"Average R^2: {np.mean(r2_scores):.4f}")
+
+
 if __name__ == '__main__':
     data2023 = read_full_df(alldata2023path)
     summary2023 = summarize_df(data2023)
@@ -192,6 +234,9 @@ if __name__ == '__main__':
         print("Variance Inflation Factor (VIF):")
         print(vif_data)
         perform_linear_regression(df, 'CO2')
+
+    print("Performing k-fold cross-validation with the last config:")
+    cross_validate_linear_regression(df, 'CO2', k=10)
 
     # print_data_quality_issues(data_quality_issues)cesces
 
