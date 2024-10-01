@@ -16,9 +16,6 @@ class Strategy(Enum):
     ONE_MONTH_TAIL = 2
 
 
-def get_model():
-    return sm.OLS()
-
 
 def spin(start:int, period:int, y:str):
     while start < 13:
