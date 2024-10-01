@@ -3,22 +3,22 @@ import data_functions as func
 import calendar
 import statsmodels.api as sm
 import pandas as pd
-from enum import Enum
 import numpy as np
+import random
 
 dropped = [
     # 'CO2',
     # 'date',
     # 'hour',
-    # 'consumption',
-    # 'production',
+    'consumption',
+    'production',
     # 'solar prediction',
     # 'wind',
     'hydro',
     'district',
     # 'electricity_cost',
     'year',
-    'month',
+    # 'month',
     'day',
     # 'day_of_week',
     'Vantaa Helsinki-Vantaan lentoasema temperature',
@@ -26,15 +26,18 @@ dropped = [
     'Liperi Joensuu lentoasema temperature',
     'Jyväskylä lentoasema temperature',
     'Rovaniemi lentoasema AWOS temperature',
+    'hour_sin',
+    'month_cos'
     # 'temp'
+
 ]
 
 norm = [
     # 'CO2',
     # 'date',
     # 'hour',
-    'consumption',
-    'production',
+    # 'consumption',
+    # 'production',
     'solar prediction',
     'wind',
     # 'hydro',
@@ -49,7 +52,7 @@ norm = [
     # 'Liperi Joensuu lentoasema temperature',
     # 'Jyväskylä lentoasema temperature',
     # 'Rovaniemi lentoasema AWOS temperature',
-    # 'temp'
+    'temp'
 ]
 
 periodic = [
@@ -64,18 +67,22 @@ periodic = [
     # 'district',
     # 'electricity_cost',
     # 'year',
-    # 'month',
+    'month',
     # 'day',
     'day_of_week',
 ]
 
-RENORMALIZE_LIMIT = True    # This switch is for renormalizing variables when new limited DF is spliced from previously normalized
-                            # Could be useful when continuous variables tend to have big differences between different time periods
+
 
 
 class DFHandler:
 
     def __init__(self, path:str):
+        
+        # This switch is for renormalizing variables when new limited DF is spliced from previously normalized
+        # Could be useful when continuous variables tend to have big differences between different time periods
+        self.renormalize_limit = True
+        
         self.full_df = func.read_full_df(path)
         self.initialized_df = self.full_df.copy()   
         self.range_df = self.full_df.copy()
@@ -99,15 +106,26 @@ class DFHandler:
     def get_range_df(self):
         return self.range_df
 
-    def set_renormalize_limit(value:bool):
-        RENORMALIZE_LIMIT = value
+    def set_renormalize_limit(self, value:bool):
+        self.renormalize_limit = value
+
+    def get_random_day(self, year=2023):
+        """
+        Get all 24 hour data of a random day in given year (default is 2023)
+        """
+        month = random.randint(1,12)
+        _, days_in_month = calendar.monthrange(year, month)
+        day = random.randint(1, days_in_month)
+        random_date = datetime(year, month, day).date()
+        return self.initialized_df[self.initialized_df['date'] == random_date]
+            
     
     def limit(self, s_year, s_month, e_year, e_month):
         """
         Create a date range and splices initialized df into new one
         """
         DF = self.initialized_df
-        if RENORMALIZE_LIMIT and self.normalized:
+        if self.renormalize_limit and self.normalized:
             for column in norm:
                 DF[column] = self.full_df[column]
 
@@ -118,8 +136,7 @@ class DFHandler:
             calendar.monthrange(e_year, min(e_month, 12))[1]
         ).date()
         self.range_df = DF[(DF['date'] >= start) & (DF['date'] <= end)].reset_index(drop=True)
-        
-        if RENORMALIZE_LIMIT and self.normalized:
+        if self.renormalize_limit and self.normalized:
             self.normalize(self.range_df)
     
     
@@ -138,9 +155,8 @@ class DFHandler:
         Create column for avg temperature of all temperature observations
         """
         DF = self.initialized_df
-        if 'temp' in DF.columns:
-            DF['temp'] = DF.iloc[:,-5:].mean(axis=1)
-            self.initialized_df = DF
+        DF['temp'] = DF.iloc[:,-5:].mean(axis=1)
+        self.initialized_df = DF
 
 
     def drop_columns(self):
@@ -159,8 +175,8 @@ class DFHandler:
         """
         DF = self.initialized_df
         for column in periodic:
-            DF[column+'_sin'] = np.sin(2 * np.pi * DF[column] / (max(DF[column])-1))
-            DF[column+'_cos'] = np.cos(2 * np.pi * DF[column] / (max(DF[column])-1))
+            DF[column+'_sin'] = np.sin(2 * np.pi * DF[column] / (max(DF[column])+1))
+            DF[column+'_cos'] = np.cos(2 * np.pi * DF[column] / (max(DF[column])+1))
         DF = DF.drop(columns=periodic)
         self.initialized_df = DF
         print('To periodic (sin, cos):',periodic,'\n=============================')
@@ -183,7 +199,7 @@ class DFHandler:
             print('Normalized columns:',norm,'\n=============================')
         else:
             df = DF
-            if RENORMALIZE_LIMIT:
+            if self.renormalize_limit:
                 print('Re-Normalized columns:',norm,'\n=============================')
         self.normalized = True
         
