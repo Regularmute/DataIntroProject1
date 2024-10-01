@@ -107,7 +107,7 @@ def load_pieces(fmi_pieces):
     # return data
 
 
-def generate_fmi_pieces(start_year=2024, start_month=3, end_year=2024, end_month=9, start_counter=27):
+def generate_fmi_pieces(start_year=2022, start_month=1, end_year=2024, end_month=9, start_counter=1):
     fmi_pieces = []
     months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun',
               'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
@@ -169,7 +169,7 @@ def forecast_query(places):
 
 if __name__ == "__main__":
     time_splits = generate_fmi_pieces(
-        start_year=2022, start_month=6, end_year=2024, end_month=9, start_counter=6)
+        start_year=2024, start_month=9, end_year=2024, end_month=9, start_counter=33)
     # print(time_splits)
 
     df = load_pieces(time_splits)
