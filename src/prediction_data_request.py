@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 import pandas as pd
 from request_builder import get_fingrid_url, get_dataframe_by_url
-from fmi_request import forecast_query
+from fmi_request import forecast_query, format_forecast_df
 from fmi_config import forecast_places
 from porssisahko_request import get_elec_pred_by_url_and_date
 
@@ -72,5 +72,8 @@ print(predicted_elec_prices_df.to_string())
 
 predicted_weather_df = forecast_query(forecast_places)
 tomorrow_weather_df = predicted_weather_df[predicted_weather_df['timestamp'].dt.date == tomorrow_date + timedelta(days=2)]
+formatted_weather_df = format_forecast_df(tomorrow_weather_df)
+
 print("weather prediction")
-print(tomorrow_weather_df.head())
+print(formatted_weather_df.head())
+formatted_weather_df.to_csv('data/weather_prediction.csv', index=False)

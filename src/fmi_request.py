@@ -166,6 +166,17 @@ def forecast_query(places):
     df = pd.DataFrame(data)
     return df
 
+def format_forecast_df(dataframe):
+    df = dataframe.copy()
+    df['timestamp'] = pd.to_datetime(df['timestamp'])
+    df['year'] = df['timestamp'].dt.year
+    df['month'] = df['timestamp'].dt.month
+    df['day'] = df['timestamp'].dt.day
+    df['day_of_week'] = df['timestamp'].dt.day_name()
+    df['hour'] = df['timestamp'].dt.hour
+    df['minute'] = df['timestamp'].dt.minute
+    return df
+
 
 if __name__ == "__main__":
     time_splits = generate_fmi_pieces(
