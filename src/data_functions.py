@@ -2,6 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
+import random
 import statsmodels.api as sm
 from statsmodels.stats.outliers_influence import variance_inflation_factor
 from scipy import stats
@@ -114,13 +115,14 @@ def perform_linear_regression(df, dependent_var):
     """Perform linear regression with the specified dependent variable."""
     df = df.dropna(subset=[dependent_var])
 
-    X = df.drop(columns=[dependent_var])
+    X = df.drop(columns=[dependent_var, 'date'])
 
     X = sm.add_constant(X)
     y = df[dependent_var]
 
     model = sm.OLS(y, X).fit()
     print(model.summary())
+    return model
 
 
 def clean_df(df,):
@@ -152,12 +154,18 @@ def clean_df(df,):
     df.drop(columns=['solar prediction'], inplace=True)
 
     columns_to_transform = [
-        'CO2', 'wind', 'solar_prediction', 'electricity_cost', 'temperature']
+        'wind', 'solar_prediction', 'electricity_cost', 'temperature', 'production']
+
     for column in columns_to_transform:
-        min_value = df[column].min()
-        if min_value <= 0:
-            df[column] = df[column] - min_value + 1e-6
-        df[column], _ = stats.boxcox(df[column])
+        mean = df[column].mean()
+        sd = df[column].std()
+        df[column] = (df[column] - mean) / (2 * sd)
+
+    # for column in columns_to_transform:
+    #     min_value = df[column].min()
+    #     if min_value <= 0:
+    #         df[column] = df[column] - min_value + 1e-6
+    #     df[column], _ = stats.boxcox(df[column])
 
     df.drop(columns=config['drop'], inplace=True)
 
@@ -166,9 +174,10 @@ def clean_df(df,):
 
 def calculate_vif(df):
     """Calculate Variance Inflation Factor (VIF) for each feature in the DataFrame."""
-    X = df.drop(columns=['CO2'])
+    X = df.drop(columns=['CO2', 'date'])
     X = sm.add_constant(X)
 
+    vif_data = pd.DataFrame()
     vif_data = pd.DataFrame()
     vif_data["feature"] = X.columns
     vif_data["VIF"] = [variance_inflation_factor(
@@ -181,7 +190,7 @@ def cross_validate_linear_regression(df, dependent_var, k=10):
     """Perform k-fold cross-validation for linear regression."""
     df = df.dropna(subset=[dependent_var])
 
-    X = df.drop(columns=[dependent_var])
+    X = df.drop(columns=[dependent_var, 'date'])
     X = sm.add_constant(X)
     y = df[dependent_var]
 
@@ -190,6 +199,7 @@ def cross_validate_linear_regression(df, dependent_var, k=10):
     rmse_scores = []
     mape_scores = []
     r2_scores = []
+    y_avgs = []
 
     for train_index, test_index in kf.split(X):
         X_train, X_test = X.iloc[train_index], X.iloc[test_index]
@@ -198,16 +208,20 @@ def cross_validate_linear_regression(df, dependent_var, k=10):
         model = sm.OLS(y_train, X_train).fit()
         y_pred = model.predict(X_test)
 
+        y_avgs.append(y_test.mean())
         mse_scores.append(mean_squared_error(y_test, y_pred))
         rmse_scores.append(np.sqrt(mean_squared_error(y_test, y_pred)))
         mape_scores.append(mean_absolute_percentage_error(y_test, y_pred))
         r2_scores.append(r2_score(y_test, y_pred))
 
+    y_avgs_str = [f"{avg:.4f}" for avg in y_avgs]
     mse_scores_str = [f"{score:.4f}" for score in mse_scores]
     rmse_scores_str = [f"{score:.4f}" for score in rmse_scores]
     mape_scores_str = [f"{score:.4f}" for score in mape_scores]
     r2_scores_str = [f"{score:.4f}" for score in r2_scores]
 
+    print(f"Average y: {y_avgs_str}")
+    print(f"Avg of avg ys: {np.mean(y_avgs):.4f}")
     print(f"Mean Squared Error (MSE) scores: {mse_scores_str}")
     print(f"Average MSE: {np.mean(mse_scores):.4f}")
     print(f"Root Mean Squared Error (RMSE) scores: {rmse_scores_str}")
@@ -218,12 +232,84 @@ def cross_validate_linear_regression(df, dependent_var, k=10):
     print(f"Average R^2: {np.mean(r2_scores):.4f}")
 
 
+def predict_co2_for_day(model, df, date):
+    """Predict CO2 emissions for one day using the trained model."""
+    day_data = df[df['date'] == date]
+    y_actual = day_data['CO2']
+    X_day = day_data.drop(columns=['CO2', 'date'])
+    X_day = sm.add_constant(X_day)
+    X_day = sm.add_constant(X_day, has_constant='add')
+
+    print(f"X_day: {X_day}")
+
+    print(f"peridcting inside predict_co2_for_day function")
+
+    print(f"X_day shape: {X_day.shape}")
+    print(f"X_day columns: {X_day.columns}")
+    print(f"y_actual shape: {y_actual.shape}")
+    print(f"y_actual: {y_actual}")
+
+    model_exog_names = model.model.exog_names
+    X_day_columns = X_day.columns.tolist()
+
+    missing_in_X_day = [
+        col for col in model_exog_names if col not in X_day_columns]
+    extra_in_X_day = [
+        col for col in X_day_columns if col not in model_exog_names]
+
+    if missing_in_X_day:
+        print(f"Columns missing in X_day: {missing_in_X_day}")
+    if extra_in_X_day:
+        print(f"Extra columns in X_day: {extra_in_X_day}")
+
+    print(f"Model parameters: {model.params}")
+    print(f"Model exog names: {model_exog_names}")
+
+    y_pred = model.predict(X_day)
+    print("fails before this?")
+    return y_actual, y_pred
+
+
+def compare_predictions(y_actual, y_pred):
+    """Compare the predicted CO2 emissions to the actual values."""
+    mse = mean_squared_error(y_actual, y_pred)
+    rmse = np.sqrt(mse)
+    mape = mean_absolute_percentage_error(y_actual, y_pred)
+    r2 = r2_score(y_actual, y_pred)
+
+    print(f"Mean Squared Error (MSE): {mse:.4f}")
+    print(f"Root Mean Squared Error (RMSE): {rmse:.4f}")
+    print(f"Mean Absolute Percentage Error (MAPE): {mape:.4f}")
+    print(f"R^2 Score: {r2:.4f}")
+
+    # Create a DataFrame with y_actual and y_pred
+    comparison_df = pd.DataFrame({
+        'Actual CO2': y_actual,
+        'Predicted CO2': y_pred
+    })
+
+    # Print the DataFrame
+    print("\nComparison of Actual and Predicted CO2 Emissions:")
+    print(comparison_df)
+
+
 if __name__ == '__main__':
     data2023 = read_full_df(alldata2023path)
     summary2023 = summarize_df(data2023)
 
     print_summary(summary2023)
     data_quality_issues = check_data_quality(data2023)
+
+    # for config in configs:
+    #     print("Config:", config)
+    #     df = clean_df(data2023)
+    #     vif_data = calculate_vif(df)
+
+    #     print(type(vif_data))
+    #     print("Variance Inflation Factor (VIF):")
+    #     print(vif_data)
+    #     perform_linear_regression(df, 'CO2')
+    #     cross_validate_linear_regression(df, 'CO2', k=10)
 
     for config in configs:
         print("Config:", config)
@@ -233,10 +319,28 @@ if __name__ == '__main__':
         print(type(vif_data))
         print("Variance Inflation Factor (VIF):")
         print(vif_data)
-        perform_linear_regression(df, 'CO2')
 
-    print("Performing k-fold cross-validation with the last config:")
-    cross_validate_linear_regression(df, 'CO2', k=10)
+        # Train the model and get the trained model
+        print("\nTraining the linear regression model:")
+        model = perform_linear_regression(df, 'CO2')
+        print("\nPerforming k-fold cross-validation:")
+        cross_validate_linear_regression(df, 'CO2', k=10)
+
+       # Extract unique dates and select a random date
+        unique_dates = df['date'].unique()
+        random_date = random.choice(unique_dates)
+
+        # Predict CO2 emissions for the selected date
+        print(f"\nPredicting CO2 emissions for date {random_date}:")
+        y_actual, y_pred = predict_co2_for_day(model, df, random_date)
+
+        print(f"\n comparing predictions for date {random_date}:")
+        # Compare the predictions to the actual values
+        compare_predictions(y_actual, y_pred)
+    # print("Performing k-fold cross-validation with the last config:")
+    # cross_validate_linear_regression(df, 'CO2', k=10)
+
+    # plot_pairplot(df)
 
     # print_data_quality_issues(data_quality_issues)cesces
 
