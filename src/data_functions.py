@@ -11,6 +11,8 @@ from fmi_config import stations as fmi_stations
 from patsy import dmatrices
 from sklearn.model_selection import KFold
 from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_percentage_error
+from scipy.stats import spearmanr
+
 
 from data_test_config import configs
 
@@ -115,7 +117,7 @@ def perform_linear_regression(df, dependent_var):
     """Perform linear regression with the specified dependent variable."""
     df = df.dropna(subset=[dependent_var])
 
-    X = df.drop(columns=[dependent_var, 'date'])
+    X = df.drop(columns=[dependent_var, 'date', 'hour'])
 
     X = sm.add_constant(X)
     y = df[dependent_var]
@@ -174,7 +176,7 @@ def clean_df(df,):
 
 def calculate_vif(df):
     """Calculate Variance Inflation Factor (VIF) for each feature in the DataFrame."""
-    X = df.drop(columns=['CO2', 'date'])
+    X = df.drop(columns=['CO2', 'date', 'hour'])
     X = sm.add_constant(X)
 
     vif_data = pd.DataFrame()
@@ -190,7 +192,7 @@ def cross_validate_linear_regression(df, dependent_var, k=10):
     """Perform k-fold cross-validation for linear regression."""
     df = df.dropna(subset=[dependent_var])
 
-    X = df.drop(columns=[dependent_var, 'date'])
+    X = df.drop(columns=[dependent_var, 'date', 'hour'])
     X = sm.add_constant(X)
     y = df[dependent_var]
 
@@ -234,9 +236,10 @@ def cross_validate_linear_regression(df, dependent_var, k=10):
 
 def predict_co2_for_day(model, df, date):
     """Predict CO2 emissions for one day using the trained model."""
-    day_data = df[df['date'] == date]
+    day_data = df[df['date'] == date].sort_values(by='hour')
+    print(f"day_data: {day_data}")
     y_actual = day_data['CO2']
-    X_day = day_data.drop(columns=['CO2', 'date'])
+    X_day = day_data.drop(columns=['CO2', 'date', 'hour'])
     X_day = sm.add_constant(X_day)
     X_day = sm.add_constant(X_day, has_constant='add')
 
@@ -282,15 +285,28 @@ def compare_predictions(y_actual, y_pred):
     print(f"Mean Absolute Percentage Error (MAPE): {mape:.4f}")
     print(f"R^2 Score: {r2:.4f}")
 
-    # Create a DataFrame with y_actual and y_pred
+    # Assuming y_actual has 24 values for 24 hours
+    hours = list(range(len(y_actual)))
     comparison_df = pd.DataFrame({
+        'Hour': hours,
         'Actual CO2': y_actual,
         'Predicted CO2': y_pred
     })
 
+    # Calculate the rank for both actual and predicted CO2 emissions
+    comparison_df['Actual Rank'] = comparison_df['Actual CO2'].rank()
+    comparison_df['Predicted Rank'] = comparison_df['Predicted CO2'].rank()
+
+    # Calculate Spearman's rank correlation coefficient
+    spearman_corr, _ = spearmanr(
+        comparison_df['Actual Rank'], comparison_df['Predicted Rank'])
+
     # Print the DataFrame
     print("\nComparison of Actual and Predicted CO2 Emissions:")
     print(comparison_df)
+
+    # Print Spearman's rank correlation coefficient
+    print(f"\nSpearman's Rank Correlation: {spearman_corr:.4f}")
 
 
 if __name__ == '__main__':
@@ -337,30 +353,3 @@ if __name__ == '__main__':
         print(f"\n comparing predictions for date {random_date}:")
         # Compare the predictions to the actual values
         compare_predictions(y_actual, y_pred)
-    # print("Performing k-fold cross-validation with the last config:")
-    # cross_validate_linear_regression(df, 'CO2', k=10)
-
-    # plot_pairplot(df)
-
-    # print_data_quality_issues(data_quality_issues)cesces
-
-    # data2023 = clean_df(data2023)
-
-    # summary2023 = summarize_df(data2023)
-    # print_summary(summary2023)
-
-    # data_quality_issues = check_data_quality(data2023)
-    # print_data_quality_issues(data_quality_issues)
-
-    # vif_data = calculate_vif(data2023)
-    # print("Variance Inflation Factor (VIF):")
-    # print(vif_data)
-
-    # perform_linear_regression(data2023, 'CO2')
-
-   # perform_linear_regression2(data2023, 'CO2')
-
-    # cov_matrix = data2023.cov()    df.drop(columns=['electricity_cost'], inplace=True)
-    # print(cov_matrix)
-
-    # plot_pairplot(data2023)
