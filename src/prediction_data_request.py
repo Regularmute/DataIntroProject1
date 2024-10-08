@@ -3,7 +3,7 @@ import pandas as pd
 from request_builder import get_fingrid_url, get_dataframe_by_url
 from fmi_request import forecast_query
 from fmi_config import forecast_places
-from porssisahko_request import get_elec_pred_by_url
+from porssisahko_request import get_elec_pred_by_url_and_date
 
 tomorrow_date = datetime.today().date() - timedelta(days=1)
 predicted_elec_consumption_url = get_fingrid_url(165,
@@ -66,9 +66,9 @@ print("production")
 print(predicted_elec_production_df.head())
 
 predicted_elec_prices_url = 'https://api.porssisahko.net/v1/latest-prices.json'
-predicted_elec_prices_df = get_elec_pred_by_url(predicted_elec_prices_url)
-print("elcetricity price prediction")
-print(predicted_elec_prices_df.head())
+predicted_elec_prices_df = get_elec_pred_by_url_and_date(predicted_elec_prices_url, tomorrow_date.strftime('%Y-%m-%d'))
+print("electricity price prediction")
+print(predicted_elec_prices_df.to_string())
 
 predicted_weather_df = forecast_query(forecast_places)
 tomorrow_weather_df = predicted_weather_df[predicted_weather_df['timestamp'].dt.date == tomorrow_date + timedelta(days=2)]
