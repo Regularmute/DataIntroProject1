@@ -98,7 +98,6 @@ def plot_pairplot(df):
 def perform_linear_regression2(df, dependent_var):
     """Perform linear regression with the specified dependent variable."""
     df = df.dropna(subset=[dependent_var])
-
     # Define the formula for the linear regression model with interaction terms    df.drop(columns=['electricity_cost'], inplace=True)
     formula = f"{dependent_var} ~ " + \
         " + ".join([f"{col}" for col in df.columns if col != dependent_var])
@@ -113,17 +112,21 @@ def perform_linear_regression2(df, dependent_var):
     print(model.summary())
 
 
-def perform_linear_regression(df, dependent_var):
+def perform_linear_regression(df, dependent_var, print_=True):
     """Perform linear regression with the specified dependent variable."""
     df = df.dropna(subset=[dependent_var])
 
     X = df.drop(columns=[dependent_var, 'date', 'hour'])
 
-    X = sm.add_constant(X)
+    X = sm.add_constant(X, has_constant='add')
     y = df[dependent_var]
-
+    if print_:
+        print("TRAINING features ==================================")
+        print(X.columns.tolist())
+        print("=====================================================")
     model = sm.OLS(y, X).fit()
-    print(model.summary())
+    if print_:
+        print(model.summary())
     return model
 
 
@@ -188,7 +191,7 @@ def calculate_vif(df):
     return vif_data
 
 
-def cross_validate_linear_regression(df, dependent_var, k=10):
+def cross_validate_linear_regression(df, dependent_var,  print_=True, k=10):
     """Perform k-fold cross-validation for linear regression."""
     df = df.dropna(subset=[dependent_var])
 
@@ -221,36 +224,38 @@ def cross_validate_linear_regression(df, dependent_var, k=10):
     rmse_scores_str = [f"{score:.4f}" for score in rmse_scores]
     mape_scores_str = [f"{score:.4f}" for score in mape_scores]
     r2_scores_str = [f"{score:.4f}" for score in r2_scores]
+    if print_:
+        print(f"Average y: {y_avgs_str}")
+        print(f"Avg of avg ys: {np.mean(y_avgs):.4f}")
+        print(f"Mean Squared Error (MSE) scores: {mse_scores_str}")
+        print(f"Average MSE: {np.mean(mse_scores):.4f}")
+        print(f"Root Mean Squared Error (RMSE) scores: {rmse_scores_str}")
+        print(f"Average RMSE: {np.mean(rmse_scores):.4f}")
+        print(f"Mean Absolute Percentage Error (MAPE) scores: {mape_scores_str}")
+        print(f"Average MAPE: {np.mean(mape_scores):.4f}")
+        print(f"R^2 scores: {r2_scores_str}")
+        print(f"Average R^2: {np.mean(r2_scores):.4f}")
 
-    print(f"Average y: {y_avgs_str}")
-    print(f"Avg of avg ys: {np.mean(y_avgs):.4f}")
-    print(f"Mean Squared Error (MSE) scores: {mse_scores_str}")
-    print(f"Average MSE: {np.mean(mse_scores):.4f}")
-    print(f"Root Mean Squared Error (RMSE) scores: {rmse_scores_str}")
-    print(f"Average RMSE: {np.mean(rmse_scores):.4f}")
-    print(f"Mean Absolute Percentage Error (MAPE) scores: {mape_scores_str}")
-    print(f"Average MAPE: {np.mean(mape_scores):.4f}")
-    print(f"R^2 scores: {r2_scores_str}")
-    print(f"Average R^2: {np.mean(r2_scores):.4f}")
 
-
-def predict_co2_for_day(model, df, date):
+def predict_co2_for_day(model, df, date, print_=True):
     """Predict CO2 emissions for one day using the trained model."""
     day_data = df[df['date'] == date].sort_values(by='hour')
-    print(f"day_data: {day_data}")
+    if print_:
+        print(f"day_data: {day_data}")
     y_actual = day_data['CO2']
     X_day = day_data.drop(columns=['CO2', 'date', 'hour'])
     X_day = sm.add_constant(X_day)
     X_day = sm.add_constant(X_day, has_constant='add')
+    
+    if print_:
+        print(f"X_day: {X_day}")
 
-    print(f"X_day: {X_day}")
+        print(f"peridcting inside predict_co2_for_day function")
 
-    print(f"peridcting inside predict_co2_for_day function")
-
-    print(f"X_day shape: {X_day.shape}")
-    print(f"X_day columns: {X_day.columns}")
-    print(f"y_actual shape: {y_actual.shape}")
-    print(f"y_actual: {y_actual}")
+        print(f"X_day shape: {X_day.shape}")
+        print(f"X_day columns: {X_day.columns}")
+        print(f"y_actual shape: {y_actual.shape}")
+        print(f"y_actual: {y_actual}")
 
     model_exog_names = model.model.exog_names
     X_day_columns = X_day.columns.tolist()
@@ -260,30 +265,38 @@ def predict_co2_for_day(model, df, date):
     extra_in_X_day = [
         col for col in X_day_columns if col not in model_exog_names]
 
-    if missing_in_X_day:
+    if missing_in_X_day and print_:
         print(f"Columns missing in X_day: {missing_in_X_day}")
-    if extra_in_X_day:
+    if extra_in_X_day and print_:
         print(f"Extra columns in X_day: {extra_in_X_day}")
+    if print_:
+        print(f"Model parameters: {model.params}")
+        print(f"Model exog names: {model_exog_names}")
 
-    print(f"Model parameters: {model.params}")
-    print(f"Model exog names: {model_exog_names}")
+    try:
+        y_pred = model.predict(X_day)
+    except Exception as e:
+        print(f"*** Cannot make prediction *** {e}")
+        print(f"Day-columns: {X_day_columns}")
+        print(f"Model parameters: {model_exog_names}")
 
-    y_pred = model.predict(X_day)
-    print("fails before this?")
+        
+    if print_:
+        print("fails before this?")
     return y_actual, y_pred
 
 
-def compare_predictions(y_actual, y_pred):
+def compare_predictions(y_actual, y_pred, print_=True):
     """Compare the predicted CO2 emissions to the actual values."""
     mse = mean_squared_error(y_actual, y_pred)
     rmse = np.sqrt(mse)
     mape = mean_absolute_percentage_error(y_actual, y_pred)
     r2 = r2_score(y_actual, y_pred)
-
-    print(f"Mean Squared Error (MSE): {mse:.4f}")
-    print(f"Root Mean Squared Error (RMSE): {rmse:.4f}")
-    print(f"Mean Absolute Percentage Error (MAPE): {mape:.4f}")
-    print(f"R^2 Score: {r2:.4f}")
+    if print_:
+        print(f"Mean Squared Error (MSE): {mse:.4f}")
+        print(f"Root Mean Squared Error (RMSE): {rmse:.4f}")
+        print(f"Mean Absolute Percentage Error (MAPE): {mape:.4f}")
+        print(f"R^2 Score: {r2:.4f}")
 
     # Assuming y_actual has 24 values for 24 hours
     hours = list(range(len(y_actual)))
@@ -300,14 +313,16 @@ def compare_predictions(y_actual, y_pred):
     # Calculate Spearman's rank correlation coefficient
     spearman_corr, _ = spearmanr(
         comparison_df['Actual Rank'], comparison_df['Predicted Rank'])
-
     # Print the DataFrame
-    print("\nComparison of Actual and Predicted CO2 Emissions:")
-    print(comparison_df)
+    if print_:
+        print("\nComparison of Actual and Predicted CO2 Emissions:")
+        print(comparison_df)
 
     # Print Spearman's rank correlation coefficient
-    print(f"\nSpearman's Rank Correlation: {spearman_corr:.4f}")
-
+        print(f"\nSpearman's Rank Correlation: {spearman_corr:.4f}")
+    results = {"mse":mse,"rmse":rmse,"mape":mape,"r2":r2,"spearman_corr":spearman_corr}
+    
+    return comparison_df, results
 
 if __name__ == '__main__':
     data2023 = read_full_df(alldata2023path)
