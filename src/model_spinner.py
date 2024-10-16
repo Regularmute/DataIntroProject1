@@ -27,6 +27,7 @@ class Strategy(Enum):
     # Train model with one month, predict every day of the year
     ONE_MONTH_FULL = 6
     THREE_MONTHS_FULL = 7               # Same as above with three months
+    YEAR_WITH_X_DAYS_PRIOR = 8  # New strategy
 
 
 class PlotType(Enum):
@@ -35,6 +36,7 @@ class PlotType(Enum):
     """
     METRICS = 1                         # Plot metrics
     PREDICTION = 2                      # Plot predictions vs true values
+    NONE = 3                            # No plot
 
 
 # def spin(start:int, period:int, y:str):
@@ -53,7 +55,7 @@ class PlotType(Enum):
 #         start+=period
 
 
-def run_strategy(strat: Strategy, plot_type: PlotType, days=0, print_=True):
+def run_strategy(strat: Strategy, plot_type: PlotType, days=0, print_=True, prior_days=30):
     """
     Run given strategy of model validation.
     """
@@ -286,6 +288,49 @@ def run_strategy(strat: Strategy, plot_type: PlotType, days=0, print_=True):
                 plot_predictions(df, month-1, axs, red_line_limit)
 
         plt.show()
+    elif strat == Strategy.YEAR_WITH_X_DAYS_PRIOR:
+        first_day = datetime(2023, 1, 1)
+        data = DFH.get_initialized_dataframe()
+        metrics_df = pd.DataFrame()
+        predictions_df = pd.DataFrame()
+
+        if plot_type == PlotType.METRICS:
+            fig, axs = plt.subplots(1, 5, figsize=(20, 20))
+        else:
+            fig, axs = plt.subplots(1, 1, figsize=(20, 20))
+
+        for n in range(prior_days, 365):
+            end = first_day + timedelta(days=n)
+            start = end - timedelta(days=prior_days+1)
+            start = start.date()
+            end = (end - timedelta(days=1)).date()
+
+            training_data = DFH.limit(start=start, end=end).get_range_df()
+            model = func.perform_linear_regression(
+                training_data, 'CO2', print_=False)
+            get_day = (first_day + timedelta(days=n)).date()
+            day = DFH.get_day(get_day)
+            actual, pred = func.predict_co2_for_day(
+                model, day, day.date[0], print_=False)
+            comparison = func.compare_predictions(actual, pred, print_=False)
+
+            new_metrics_row = pd.DataFrame([comparison[1]])
+            metrics_df = pd.concat(
+                [metrics_df, new_metrics_row], ignore_index=True)
+
+            new_prediction_row = pd.DataFrame(
+                [{'Actual': actual.mean(), 'Predicted': pred.mean()}])
+            predictions_df = pd.concat(
+                [predictions_df, new_prediction_row], ignore_index=True)
+
+        if plot_type == PlotType.METRICS:
+            plot_metrics(metrics_df, None, axs, [0, 365])
+            plt.show()
+        elif plot_type == PlotType.PREDICTION:
+            plot_predictions(predictions_df, None, axs, [0, 365])
+            plt.show()
+
+        return metrics_df, predictions_df
 
 
 def plot_metrics(df, month, axs, red_line_limit):
@@ -363,6 +408,32 @@ def plot_predictions(df, month, axs, red_line_limit):
         ].set_title(f'{month+1} Prediction (orange)')
 
 
+def evaluate_metrics(df):
+    print(f"max Spearman: {df['spearman'].max()}")
+    print(f"min Spearman: {df['spearman'].min()}")
+    print(f"avg Spearman: {df['spearman'].mean()}")
+
+    # Count the number of days in each Spearman correlation
+    below_zero = df[df['spearman'] < 0].shape[0]
+    between_zero_and_half = df[(df['spearman'] >= 0) & (
+        df['spearman'] <= 0.5)].shape[0]
+    above_half = df[df['spearman'] > 0.5].shape[0]
+
+    # Print the counts
+    print(f"Number of days with Spearman correlation below 0: {below_zero}")
+    print(
+        f"Number of days with Spearman correlation between 0 and 0.5: {between_zero_and_half}")
+    print(f"Number of days with Spearman correlation above 0.5: {above_half}")
+
+    print(f"max MAPE: {df['mape'].max()}")
+    print(f"min MAPE: {df['mape'].min()}")
+    print(f"avg MAPE: {df['mape'].mean()}")
+
+    print(f"max R2: {df['r2'].max()}")
+    print(f"min R2: {df['r2'].min()}")
+    print(f"avg R2: {df['r2'].mean()}")
+
+
 if __name__ == '__main__':
     path = 'data/data_2023.csv'
     DFH = dataframe_handler.DFHandler(path)
@@ -370,5 +441,8 @@ if __name__ == '__main__':
     # Don't use renormalizing on time limited dataframe
     DFH.set_renormalize_limit(False)
     # run_strategy(Strategy.ONE_MONTH_FULL, PlotType.METRICS, 50)
-    run_strategy(Strategy.ONE_YEAR_FULL, PlotType.METRICS, 50)
+    # run_strategy(Strategy.ONE_YEAR_FULL, PlotType.METRICS, 50)
     # run_strategy(Strategy.ONE_MONTH_FULL, PlotType.PREDICTION, 50)
+    metrics, _ = run_strategy(Strategy.YEAR_WITH_X_DAYS_PRIOR,
+                              PlotType.NONE, 50, prior_days=3)
+    evaluate_metrics(metrics)

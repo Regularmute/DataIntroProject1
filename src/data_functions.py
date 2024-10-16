@@ -351,6 +351,9 @@ if __name__ == '__main__':
     for config in configs:
         print("Config:", config)
         df = clean_df(data2023)
+
+        print(f"column names of dataframe: {df.columns}")
+
         vif_data = calculate_vif(df)
 
         print(type(vif_data))
