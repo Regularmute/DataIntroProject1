@@ -231,7 +231,8 @@ def cross_validate_linear_regression(df, dependent_var,  print_=True, k=10):
         print(f"Average MSE: {np.mean(mse_scores):.4f}")
         print(f"Root Mean Squared Error (RMSE) scores: {rmse_scores_str}")
         print(f"Average RMSE: {np.mean(rmse_scores):.4f}")
-        print(f"Mean Absolute Percentage Error (MAPE) scores: {mape_scores_str}")
+        print(
+            f"Mean Absolute Percentage Error (MAPE) scores: {mape_scores_str}")
         print(f"Average MAPE: {np.mean(mape_scores):.4f}")
         print(f"R^2 scores: {r2_scores_str}")
         print(f"Average R^2: {np.mean(r2_scores):.4f}")
@@ -246,7 +247,7 @@ def predict_co2_for_day(model, df, date, print_=True):
     X_day = day_data.drop(columns=['CO2', 'date', 'hour'])
     X_day = sm.add_constant(X_day)
     X_day = sm.add_constant(X_day, has_constant='add')
-    
+
     if print_:
         print(f"X_day: {X_day}")
 
@@ -280,7 +281,6 @@ def predict_co2_for_day(model, df, date, print_=True):
         print(f"Day-columns: {X_day_columns}")
         print(f"Model parameters: {model_exog_names}")
 
-        
     if print_:
         print("fails before this?")
     return y_actual, y_pred
@@ -314,15 +314,21 @@ def compare_predictions(y_actual, y_pred, print_=True):
     spearman_corr, _ = spearmanr(
         comparison_df['Actual Rank'], comparison_df['Predicted Rank'])
     # Print the DataFrame
+
+    comparison_df['spearman'] = spearman_corr
+
     if print_:
         print("\nComparison of Actual and Predicted CO2 Emissions:")
         print(comparison_df)
 
     # Print Spearman's rank correlation coefficient
         print(f"\nSpearman's Rank Correlation: {spearman_corr:.4f}")
-    results = {"mse":mse,"rmse":rmse,"mape":mape,"r2":r2,"spearman_corr":spearman_corr}
-    
+
+    results = {"mse": mse, "rmse": rmse, "mape": mape,
+               "r2": r2, "spearman": spearman_corr}
+
     return comparison_df, results
+
 
 if __name__ == '__main__':
     data2023 = read_full_df(alldata2023path)
@@ -345,6 +351,9 @@ if __name__ == '__main__':
     for config in configs:
         print("Config:", config)
         df = clean_df(data2023)
+
+        print(f"column names of dataframe: {df.columns}")
+
         vif_data = calculate_vif(df)
 
         print(type(vif_data))
