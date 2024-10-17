@@ -9,6 +9,8 @@ import dataframe_handler
 import random
 import matplotlib.pyplot as plt
 
+from sklearn.metrics import mean_absolute_percentage_error, r2_score
+
 
 DFH = dataframe_handler.DFHandler
 
@@ -388,6 +390,7 @@ def plot_predictions(df, month, axs, red_line_limit):
 
 
 def evaluate_metrics(df, print_=True):
+
     results = {}
     results['max_spearman'] = df['spearman'].max()
     results['min_spearman'] = df['spearman'].min()
@@ -398,19 +401,36 @@ def evaluate_metrics(df, print_=True):
         df['spearman'] >= 0) & (df['spearman'] <= 0.5)].shape[0]
     results['above_half'] = df[df['spearman'] > 0.5].shape[0]
 
-    results['max_mape'] = df['mape'].max()
-    results['min_mape'] = df['mape'].min()
-    results['avg_mape'] = df['mape'].mean()
+    # makes no sense to calculate MAPE or R2 from daily values: only 24 data points and
+    # hence there are days with very close to zero CO2 and/or variance leading to unreasoable high MAPE and low R2
+    # results['max_mape'] = df['mape'].max()
+    # results['min_mape'] = df['mape'].min()
+    # results['avg_mape'] = df['mape'].mean()
 
-    results['max_r2'] = df['r2'].max()
-    results['min_r2'] = df['r2'].min()
-    results['avg_r2'] = df['r2'].mean()
+    # results['max_r2'] = df['r2'].max()
+    # results['min_r2'] = df['r2'].min()
+    # results['avg_r2'] = df['r2'].mean()
 
     if print_:
         for key, value in results.items():
             print(f"{key.replace('_', ' ').title()}: {value}")
 
     return results
+
+
+def calculate_annual_metrics(predictions_df):
+    # R2 and MAPE need to be calculated from annaul values
+    print(f'shape of predictions_df: {predictions_df.shape}')
+    actual = predictions_df['Actual']
+    predicted = predictions_df['Predicted']
+
+    mape = mean_absolute_percentage_error(actual, predicted)
+    r2 = r2_score(actual, predicted)
+
+    return {
+        'mape': mape,
+        'r2': r2
+    }
 
 
 if __name__ == '__main__':
@@ -422,30 +442,39 @@ if __name__ == '__main__':
 
     results_df = pd.DataFrame()
 
-    print("one year full:")
-    metrics, _ = run_strategy(Strategy.ONE_YEAR_FULL, PlotType.NONE, 50)
-    results = evaluate_metrics(metrics)
-    results['strategy'] = 'ONE_YEAR_FULL'
-    results['prior_days'] = 0
-    results_df = pd.concat(
-        [results_df, pd.DataFrame([results])], ignore_index=True)
+    metrics, predictions = run_strategy(
+        Strategy.YEAR_WITH_X_DAYS_PRIOR, PlotType.PREDICTION, 50, prior_days=5)
 
-    print("one month full:")
-    metrics, _ = run_strategy(Strategy.ONE_MONTH_FULL, PlotType.NONE, 50)
-    results = evaluate_metrics(metrics)
-    results['strategy'] = 'ONE_MONTH_FULL'
-    results['prior_days'] = 0
-    results_df = pd.concat(
-        [results_df, pd.DataFrame([results])], ignore_index=True)
+    evaluate_metrics(metrics)
 
-    for prior_days in range(1, 30):
-        print(f"year with {prior_days} days prior:")
-        metrics, _ = run_strategy(
-            Strategy.YEAR_WITH_X_DAYS_PRIOR, PlotType.NONE, 0, True, prior_days)
-        results = evaluate_metrics(metrics)
-        results['strategy'] = 'YEAR_WITH_X_DAYS_PRIOR'
-        results['prior_days'] = prior_days
-        results_df = pd.concat(
-            [results_df, pd.DataFrame([results])], ignore_index=True)
+    annual_metrics = calculate_annual_metrics(predictions)
+    print(f"Annual MAPE: {annual_metrics['mape']}")
+    print(f"Annual R²: {annual_metrics['r2']}")
 
-    results_df.to_csv('data/evaluation_results.csv', index=False)
+    # print("one year full:")
+    # metrics, _ = run_strategy(Strategy.ONE_YEAR_FULL, PlotType.NONE, 50)
+    # results = evaluate_metrics(metrics)
+    # results['strategy'] = 'ONE_YEAR_FULL'
+    # results['prior_days'] = 0
+    # results_df = pd.concat(
+    #     [results_df, pd.DataFrame([results])], ignore_index=True)
+
+    # print("one month full:")
+    # metrics, _ = run_strategy(Strategy.ONE_MONTH_FULL, PlotType.NONE, 50)
+    # results = evaluate_metrics(metrics)
+    # results['strategy'] = 'ONE_MONTH_FULL'
+    # results['prior_days'] = 0
+    # results_df = pd.concat(
+    #     [results_df, pd.DataFrame([results])], ignore_index=True)
+
+    # for prior_days in range(1, 30):
+    #     print(f"year with {prior_days} days prior:")
+    #     metrics, _ = run_strategy(
+    #         Strategy.YEAR_WITH_X_DAYS_PRIOR, PlotType.NONE, 0, True, prior_days)
+    #     results = evaluate_metrics(metrics)
+    #     results['strategy'] = 'YEAR_WITH_X_DAYS_PRIOR'
+    #     results['prior_days'] = prior_days
+    #     results_df = pd.concat(
+    #         [results_df, pd.DataFrame([results])], ignore_index=True)
+
+    # results_df.to_csv('data/evaluation_results.csv', index=False)
