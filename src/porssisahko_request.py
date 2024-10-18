@@ -7,7 +7,10 @@ def get_elec_pred_by_url_and_date(url, date):
     r = requests.get(url)
     if r.status_code == 200:
         df = pd.read_json(StringIO(json.dumps(r.json()['prices'])))
-        formatted_date_time = df.startDate.str.split(r'[:\-\.TZ]', expand=True).iloc[:,0:5]
+        df['startDate'] = pd.to_datetime(df['startDate'])
+        df['startDate'] = df['startDate'] + pd.Timedelta(hours=2)
+        date_time_string = df['startDate'].dt.strftime('%Y-%m-%d-%H:%M')
+        formatted_date_time = date_time_string.str.split(r'[:\-\.TZ]', expand=True).iloc[:,0:5]
         formatted_date_time.columns = ['year', 'month', 'day', 'hour', 'min']
         df = pd.concat([formatted_date_time, df.price], axis=1)
 
