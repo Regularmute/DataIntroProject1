@@ -346,19 +346,16 @@ def plot_metrics(df, month, axs, red_line_limit):
     axs[month, 0].plot(red_line_limit, [0, 0], color='red', lw=2)
     axs[month, 0].set_title(f"Month {month+1} average MSE: {df['mse'].mean()}")
     axs[month, 0].set_xticks([])
-
     axs[month, 1].plot(df.index, df["rmse"])
     axs[month, 1].plot(red_line_limit, [0, 0], color='red', lw=2)
     axs[month, 1].set_title(
         f"Month {month+1} average RMSE: {df['rmse'].mean()}")
     axs[month, 1].set_xticks([])
-
     axs[month, 2].plot(df.index, df["mape"])
     axs[month, 2].plot(red_line_limit, [0, 0], color='red', lw=2)
     axs[month, 2].set_title(
         f"Month {month+1} average MAPE: {df['mape'].mean()}")
     axs[month, 2].set_xticks([])
-
     axs[month, 3].plot(df.index, df["r2"])
     axs[month, 3].plot(red_line_limit, [0, 0], color='red', lw=2)
     axs[month, 3].set_title(f"Month {month+1} average R2: {df['r2'].mean()}")

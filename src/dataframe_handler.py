@@ -14,7 +14,7 @@ dropped = [
     'production',
     # 'solar prediction',
     # 'wind',
-    'hydro',
+    # 'hydro',
     'district',
     # 'electricity_cost',
     'year',
