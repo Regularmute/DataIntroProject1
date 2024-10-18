@@ -69,7 +69,6 @@ def fmi_get_prev_x_days(x=5):
         df = history_query(start_iso, end_iso, timestep, stations)
     except Exception as e:
         raise e
-    df.to_csv('data/fmi_prev_days.csv', index=False)
 
     return df
 
