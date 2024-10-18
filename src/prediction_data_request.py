@@ -3,6 +3,8 @@ from request_builder import get_fingrid_url, get_dataframe_by_url
 from fmi_request import forecast_query, format_forecast_df, history_query
 from fmi_config import forecast_places, stations, timestep
 from porssisahko_request import get_elec_pred_by_url_and_date
+import pandas as pd
+import requests
 
 # Fingrid API returns results in UTC, fetches by UTC+2
 
@@ -114,3 +116,45 @@ def sun_prod_get_prev_x_days(x=5):
         return historical_elec_sun_prod_df
     except Exception as e:
         raise e
+
+def fetch_prices_for_day(year, month, day):
+    url = f"https://www.sahkonhintatanaan.fi/api/v1/prices/{year}/{month}-{day}.json"
+    response = requests.get(url)
+
+    if response.status_code == 200:
+        return response.json()
+    else:
+        print(f"Failed to fetch data for {year}-{month}-{day}")
+        return None
+
+
+def get_prices_for_last_x_days(x=5):
+    df_all_days = pd.DataFrame()
+    today = datetime.now()
+
+    for i in range(1, x+1):
+        date = today - timedelta(days=i)
+        year = date.year
+        month = f"{date.month:02d}"
+        day = f"{date.day:02d}"
+        prices_data = fetch_prices_for_day(year, month, day)
+
+        if prices_data:
+            df_day = pd.DataFrame(prices_data)
+            df_all_days = pd.concat([df_all_days, df_day], ignore_index=True)
+
+    df_all_days['time_start'] = pd.to_datetime(df_all_days['time_start'])
+    df_all_days['timestamp'] = df_all_days['time_start']
+    df_all_days['year'] = df_all_days['time_start'].dt.year
+    df_all_days['month'] = df_all_days['time_start'].dt.month
+    df_all_days['day'] = df_all_days['time_start'].dt.day
+    df_all_days['hour'] = df_all_days['time_start'].dt.hour
+
+    # convert unit and add VAT (to be comparable with other data)
+    df_all_days['price'] = (
+        df_all_days['EUR_per_kWh']*100*1.255).astype(float)
+
+    df_all_days.drop(
+        columns=['time_start', 'time_end', 'EUR_per_kWh'], inplace=True)
+
+    return df_all_days
