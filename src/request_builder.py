@@ -12,7 +12,7 @@ headers = {'Cache-Control':'no-cache', 'x-api-key': os.getenv('FINGRID_API_KEY')
 def get_fingrid_url(datasetId, s_year, s_month, s_day, s_hour, s_min, e_year, e_month, e_day, e_hour, e_min):
     startTime = f"{s_year}-{s_month:02d}-{s_day:02d}T{s_hour:02d}:{s_min:02d}:00%2B02:00"
     endTime = f"{e_year}-{e_month:02d}-{e_day:02d}T{e_hour:02d}:{e_min:02d}:00%2B02:00"
-    return f'https://data.fingrid.fi/api/datasets/{datasetId}/data?startTime={startTime}&endTime={endTime}&format=json&pageSize=100'
+    return f'https://data.fingrid.fi/api/datasets/{datasetId}/data?startTime={startTime}&endTime={endTime}&format=json&pageSize=750'
 
 def get_dataframe_by_url(url):
     sleep(3)

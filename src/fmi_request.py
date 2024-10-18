@@ -13,8 +13,8 @@ def fmi_history_query(start_time, end_time, timestep):
     obs = download_stored_query("fmi::observations::weather::multipointcoverage",
                                 args=[f"bbox={bbox}",
                                       "timestep=" + timestep,
-                                      "starttime=" + start_time,
-                                      "endtime=" + end_time])
+                                      f"starttime={start_time}%2B02:00",
+                                       f"endtime={end_time}%2B02:00"])
     return obs
 
 
@@ -27,7 +27,7 @@ def history_query(start_time, end_time, timestep, stations):
     for t in observations.data.keys():
         timestamp = pd.to_datetime(t)
         row = {
-            'timestamp': timestamp,
+            'timestamp': timestamp + pd.Timedelta(hours=2),
             'year': timestamp.year,
             'month': timestamp.month,
             'day': timestamp.day,
