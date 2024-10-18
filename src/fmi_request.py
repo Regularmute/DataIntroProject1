@@ -135,21 +135,23 @@ def generate_fmi_pieces(start_year=2022, start_month=1, end_year=2024, end_month
     return fmi_pieces
 
 
-def fmi_forecast_query(place):
+def fmi_forecast_query(place, start_time, end_time):
     """Raw query to FMI API for forecast data."""
 
     fcst = download_stored_query(f"fmi::forecast::harmonie::surface::point::multipointcoverage&place={place.lower()}",
-                                 args=[f"bbox={bbox}"])
+                                 args=[f"bbox={bbox}",
+                                       f"starttime={start_time}%2B02:00",
+                                       f"endtime={end_time}%2B02:00"])
     return fcst
 
 
-def forecast_query(places):
+def forecast_query(places, start_time, end_time):
     """Makes pandas DataFrame from forecast data."""
     data = []
-    forecasts = {place: fmi_forecast_query(place) for place in places}
+    forecasts = {place: fmi_forecast_query(place, start_time, end_time) for place in places}
 
     for t in forecasts[places[0]].data.keys():
-        timestamp = pd.to_datetime(t)
+        timestamp = pd.to_datetime(t) + pd.Timedelta(hours=2)
         row = {
             'timestamp': timestamp,
             'year': timestamp.year,
@@ -164,6 +166,17 @@ def forecast_query(places):
         data.append(row)
 
     df = pd.DataFrame(data)
+    return df
+
+def format_forecast_df(dataframe):
+    df = dataframe.copy()
+    df['timestamp'] = pd.to_datetime(df['timestamp'])
+    df['year'] = df['timestamp'].dt.year
+    df['month'] = df['timestamp'].dt.month
+    df['day'] = df['timestamp'].dt.day
+    df['day_of_week'] = df['timestamp'].dt.day_name()
+    df['hour'] = df['timestamp'].dt.hour
+    df['minute'] = df['timestamp'].dt.minute
     return df
 
 
