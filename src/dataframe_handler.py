@@ -80,13 +80,45 @@ decaying = [
 
 
 class DFHandler:
+    """
+    DFHandler is a wrapper class for dataframes capable of running regression specific transformations
+    on data.
+
+    Attributes:
+        full_df: Loaded dataframe kept in it's orginal form.
+        initialized_df: Dataframe which has transformed values. Can be reseted.
+        range_df: Limited range df sliced from initialized_df. Only latest range will be retained.
+
+    Methods:
+        reset(): 
+            Resets initialized dataframe back to original full dataframe
+        get_full_dataframe():
+            Getter for original dataframe
+        get_initialized_dataframe():
+            Getter for latest initialized dataframe
+        get_range_df(): 
+            Getter for latest ranged dataframe.
+        get_day(date=None): 
+            Get all records on specified day. If date is not specified, a data on random day will be returned.
+        limit(s_year=None, s_month=None, e_year=None, e_month=None, s_day=1, e_day=None, start=None, end=None):
+            Creates a date range and slices the initialized DataFrame into a new one.
+        avg_temperatures(df=None):
+            Creates a column for the average temperature of all temperature observations.
+        drop_columns(df=None):
+            Drops all columns listed in 'dropped'.
+        to_periodic(df=None):
+            Creates a new column of periodic values for categorical data listed in 'periodic'.
+        normalize(self, df=None):
+            Normalize columns listed in 'norm'
+        run_decay(self, df=None):
+            Run decay function to all columns listed in 'decaying'.
+        initialize(self, df=None, avg_temp=True, create_dates=True, to_periodic=True, normalize=True, drop_columns=True, decay=False):
+            Run all above
+    """
 
     def __init__(self, path=None, df=None):
-        
-        # This switch is for renormalizing variables when new limited DF is spliced from previously normalized
-        # Could be useful when continuous variables tend to have big differences between different time periods
         self.renormalize_limit = True
-        
+        print(f"New DFHandler --- PATH:{path}, DF:{type(df)}")
         if df is not None:
             self.full_df = df
         elif path is not None:
@@ -131,6 +163,10 @@ class DFHandler:
         """
         Create a date range and splices initialized df into new one
         """
+        if start and end:
+            print(f"CREATING NEW RANGED DF {start}-{end}")
+        else:    
+            print(f"CREATING NEW RANGED DF {s_year}:{s_month}:{s_day}-{e_year}:{e_month}:{e_day}")
         if self.renormalize_limit and self.normalized:
             self.initialize(normalize=False)
         DF = self.initialized_df
@@ -174,6 +210,7 @@ class DFHandler:
         Create column for avg temperature of all temperature observations. Non-parametrical
         call averages temperature columns in existing class dataframe.
         """
+        print("AVERAGING TEMPERATURES")
         if df is None:
             DF = self.initialized_df
         else:
@@ -189,9 +226,10 @@ class DFHandler:
         """
         Drop all columns defined in list 'dropped'. If no dataframe was passed, drop columns in class object self.initialized_df
         """
+        print(f"DROPPING COLUMNS {dropped} (if present)")
         if df is None:
             DF = self.initialized_df
-            drop_columns = [column for column in DF.columns if column in dropped]
+            drop_columns = [column for column in DF.columns if column in dropped and column in DF.columns]
             self.initialized_df = DF.drop(columns=drop_columns)
             return self
         DF = df
@@ -203,11 +241,12 @@ class DFHandler:
         """
         Create new column of periodic values for categorical data in columns listed in 'periodic'
         """
+        print(f"PERIODIC: {periodic} (if present)")
         if df is None:
             DF = self.initialized_df
         else:
             DF = df
-        for column in periodic:
+        for column in [col for col in periodic if col in DF.columns]:
             DF[column+'_sin'] = np.sin(2 * np.pi * DF[column] / (max(DF[column])+1))
             DF[column+'_cos'] = np.cos(2 * np.pi * DF[column] / (max(DF[column])+1))
         if df is None:
@@ -218,14 +257,15 @@ class DFHandler:
 
     def normalize(self, df=None):
         """
-        Normalize columns in listed in 'norm'
+        Normalize columns listed in 'norm'
         """
+        print(f"NORMALIZING: {norm} (if present)")
         if df is None:
             DF = self.initialized_df
             self.normalized = True
         else:
             DF = df
-        for column in norm:
+        for column in [col for col in norm if col in DF.columns]:
             mean = DF[column].mean()
             sd = DF[column].std()
             DF[column] = (DF[column] - mean) / (2 * sd)
@@ -237,8 +277,9 @@ class DFHandler:
 
     def run_decay(self, df=None):
         """
-        Run decay function to all dataframe columns defined in decaying list.
+        Run decay function to all dataframe columns listed in 'decaying'.
         """
+        print(f"DECAY: {decaying} (if present)")
         if df is None:
             DF = self.range_df
         else:
@@ -266,8 +307,9 @@ class DFHandler:
         """
         Run all above
         """
+        print(f"RUN INITIALIZATION on {('class instance' if df is None else 'given dataframe')}")
         if df is None:
-            self.initialized_df = self.full_df.copy()
+            self.reset()                                   # Running initialize always resets first to original dataframe
         if avg_temp:
             self.avg_temperatures(df)                      # Average temperatures
         if create_dates:
@@ -278,6 +320,11 @@ class DFHandler:
             self.normalize(df)                             # Normalize (center and scale)   
         if drop_columns:
             self.drop_columns(df)                          # Drop non required columns
+        
+        if df is None:
+            return self
+        
+        return df
 
 
     

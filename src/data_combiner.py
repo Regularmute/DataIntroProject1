@@ -4,8 +4,8 @@ import pandas as pd
 
 def combine(dataframes=None, get_handler=False):
     """
-    Combine a list of DataFrames by 'date' and 'hour'. If the frequency is finer than one hour (e.g., 15 minutes), 
-    the values will be averaged for each hour.
+    Combine a list of DataFrames by 'date' and 'hour'. These column names are not required, but column 'timestamp' should be present. 
+    If the frequency is finer than one hour (e.g., 15 minutes), the values will be averaged for each hour.
 
     Parameters:
         dataframes: List of pd.DataFrame-objects 
@@ -14,7 +14,7 @@ def combine(dataframes=None, get_handler=False):
     Returns:
         pd.DataFrame or DFHandler: The combined DataFrame object. If get_handler is True, returns a DFHandler wrapper.
     """
-
+    print(f"RUN COMPILER get_handler:{get_handler}")
     if not isinstance(dataframes, list):
         raise ValueError("Please use list of dataframes as a parameter")
     if len(dataframes) == 0:
@@ -36,17 +36,29 @@ def combine(dataframes=None, get_handler=False):
             df = df.drop(columns='minute')
         elif 'day_of_week' in df.columns:
             df = df.drop(columns='day_of_week')
+
         # Ensure timestamp to be in correct format, check columns year, month, day, hour
         if 'timestamp' in df.columns:
-            df['timestamp'] = pd.to_datetime(df['timestamp'])
-        if 'year' not in df.columns:
-            df['year'] = df.timestamp.dt.year
-        if 'month' not in df.columns:
-            df['month'] = df.timestamp.dt.month
-        if 'day' not in df.columns:
-            df['day'] = df.timestamp.dt.day
-        if 'hour' not in df.columns:
-            df['hour'] = df.timestamp.dt.hour
+            df['timestamp'] = pd.to_datetime(df['timestamp'], errors='coerce')
+            if pd.notnull(df['timestamp']).any():  # Tarkista, onko timestampit oikein
+                if 'month' not in df.columns:
+                    df['month'] = df['timestamp'].dt.month
+                if 'day' not in df.columns:
+                    df['day'] = df['timestamp'].dt.day
+                if 'hour' not in df.columns:
+                    df['hour'] = df['timestamp'].dt.hour
+            else:
+                raise ValueError("All values in 'timestamp' could not be converted to datetime.")
+            
+        else:
+            missing_cols=[]
+            for col in ['year', 'month', 'day', 'hour']:
+                if col not in df.columns:
+                    missing_cols.append(col)
+                if missing_cols:
+                    raise ValueError(f"Column 'timestamp' was not present in dataframe {i}. In this case columns ['year', 'month', 'day', 'hour']\
+                                     are required. Missing columns: [{', '.join(missing_cols)}]")
+            df['timestamp'] = pd.to_datetime(df[['year', 'month', 'day', 'hour']])            
 
         dataframes[i] = df
 
@@ -61,14 +73,18 @@ def combine(dataframes=None, get_handler=False):
             df['day_of_week'] = df.day_of_week.apply(lambda d: dow[d]).astype(int)
         df = df.groupby(['day', 'hour']).mean().reset_index()
         df['date'] = df['timestamp'].dt.date
-        df = df.drop(columns=['timestamp', 'year', 'month', 'day'])
+        df = df.drop(columns='timestamp')
         if dff.empty:
             dff = df
             continue
-        # Merge new dataframe
+        # Check columns and merge new dataframe
         for col in df.columns:
-            if col not in ['date', 'hour'] and col in dff.columns:
-                raise ValueError(f"Dublicate column name '{col}' in two or more dataframes")
+            if col in dff.columns:
+                if col not in ['date', 'hour', 'month', 'year', 'day']:
+                    raise ValueError(f"Dublicate column name '{col}' in two or more dataframes")
+                elif col in ['month', 'year', 'day']:
+                    df = df.drop(columns=col)
+
         dff = pd.merge(dff, df, on=['date', 'hour'], how='outer')
         
 
