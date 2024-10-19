@@ -23,8 +23,6 @@ def combine(dataframes=None, get_handler=False):
     for i, df in enumerate(dataframes):
         if not isinstance(df, pd.DataFrame):
             raise ValueError(f"List should contain only pd.DataFrame type objects. Object in index {i} is not a Pandas DataFrame type")
-        if 'timestamp' not in df.columns:
-            raise ValueError(f"Column 'timestamp' is required. Not present in dataframe given in index {i}")
         # Drop some unneccessary fields (if existing)
         if 'datasetId' in df.columns:
             df = df.drop(columns=['datasetId'])
