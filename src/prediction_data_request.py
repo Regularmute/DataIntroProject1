@@ -8,52 +8,65 @@ import requests
 
 # Fingrid API returns results in UTC, fetches by UTC+2
 
+
 def get_forecast_wind_prod(date):
     predicted_elec_wind_prod_url = get_fingrid_url(246,
-                                                    date.year,
-                                                    date.month,
-                                                    date.day,
-                                                    0, 0,
-                                                    date.year,
-                                                    date.month,
-                                                    date.day,
-                                                    23, 59)
-    predicted_elec_wind_prod_df = get_dataframe_by_url(predicted_elec_wind_prod_url)
+                                                   date.year,
+                                                   date.month,
+                                                   date.day,
+                                                   0, 0,
+                                                   date.year,
+                                                   date.month,
+                                                   date.day,
+                                                   23, 59)
+    predicted_elec_wind_prod_df = get_dataframe_by_url(
+        predicted_elec_wind_prod_url)
+    predicted_elec_wind_prod_df.rename(columns={'value': 'wind'}, inplace=True)
     return predicted_elec_wind_prod_df
+
 
 def get_forecast_sun_prod(date):
     predicted_elec_sun_prod_url = get_fingrid_url(247,
-                                                    date.year,
-                                                    date.month,
-                                                    date.day,
-                                                    0, 0,
-                                                    date.year,
-                                                    date.month,
-                                                    date.day,
-                                                    23, 59)
-    predicted_elec_sun_prod_df = get_dataframe_by_url(predicted_elec_sun_prod_url)
-
+                                                  date.year,
+                                                  date.month,
+                                                  date.day,
+                                                  0, 0,
+                                                  date.year,
+                                                  date.month,
+                                                  date.day,
+                                                  23, 59)
+    predicted_elec_sun_prod_df = get_dataframe_by_url(
+        predicted_elec_sun_prod_url)
+    predicted_elec_sun_prod_df.rename(
+        columns={'value': 'solar prediction'}, inplace=True)
     return predicted_elec_sun_prod_df
+
 
 def get_forecast_elec_prices(date):
     predicted_elec_prices_url = 'https://api.porssisahko.net/v1/latest-prices.json'
-    predicted_elec_prices_df = get_elec_pred_by_url_and_date(predicted_elec_prices_url, date.strftime('%Y-%m-%d'))
+    predicted_elec_prices_df = get_elec_pred_by_url_and_date(
+        predicted_elec_prices_url, date.strftime('%Y-%m-%d'))
+    predicted_elec_prices_df.rename(
+        columns={'price': 'electricity_cost'}, inplace=True)
     return predicted_elec_prices_df
+
 
 def get_forecast_weather(date):
     start_time = datetime(date.year,
-                            date.month,
-                            date.day,
-                            0, 0, 0).strftime('%Y-%m-%dT%H:%M:%S')
+                          date.month,
+                          date.day,
+                          0, 0, 0).strftime('%Y-%m-%dT%H:%M:%S')
     end_time = datetime(date.year,
-                            date.month,
-                            date.day,
-                            23, 59, 59).strftime('%Y-%m-%dT%H:%M:%S')
+                        date.month,
+                        date.day,
+                        23, 59, 59).strftime('%Y-%m-%dT%H:%M:%S')
 
-    predicted_weather_df = forecast_query(forecast_places, start_time, end_time)
+    predicted_weather_df = forecast_query(
+        forecast_places, start_time, end_time)
     formatted_weather_df = format_forecast_df(predicted_weather_df)
 
     return formatted_weather_df
+
 
 def fmi_get_prev_x_days(x=5):
     end_time = datetime.now().replace(hour=23, minute=0, second=0,
@@ -72,6 +85,7 @@ def fmi_get_prev_x_days(x=5):
 
     return df
 
+
 def wind_prod_get_prev_x_days(x=5):
     end_time = datetime.now().replace(hour=23, minute=0, second=0,
                                       microsecond=0) - timedelta(days=1)
@@ -89,10 +103,12 @@ def wind_prod_get_prev_x_days(x=5):
                                                         end_time.month,
                                                         end_time.day,
                                                         23, 59)
-        historical_elec_wind_prod_df = get_dataframe_by_url(historical_elec_wind_prod_url)
+        historical_elec_wind_prod_df = get_dataframe_by_url(
+            historical_elec_wind_prod_url)
         return historical_elec_wind_prod_df
     except Exception as e:
         raise e
+
 
 def sun_prod_get_prev_x_days(x=5):
     end_time = datetime.now().replace(hour=23, minute=0, second=0,
@@ -103,18 +119,20 @@ def sun_prod_get_prev_x_days(x=5):
 
     try:
         historical_elec_sun_prod_url = get_fingrid_url(247,
-                                                        start_time.year,
-                                                        start_time.month,
-                                                        start_time.day,
-                                                        0, 0,
-                                                        end_time.year,
-                                                        end_time.month,
-                                                        end_time.day,
-                                                        23, 59)
-        historical_elec_sun_prod_df = get_dataframe_by_url(historical_elec_sun_prod_url)
+                                                       start_time.year,
+                                                       start_time.month,
+                                                       start_time.day,
+                                                       0, 0,
+                                                       end_time.year,
+                                                       end_time.month,
+                                                       end_time.day,
+                                                       23, 59)
+        historical_elec_sun_prod_df = get_dataframe_by_url(
+            historical_elec_sun_prod_url)
         return historical_elec_sun_prod_df
     except Exception as e:
         raise e
+
 
 def fetch_prices_for_day(year, month, day):
     url = f"https://www.sahkonhintatanaan.fi/api/v1/prices/{year}/{month}-{day}.json"
