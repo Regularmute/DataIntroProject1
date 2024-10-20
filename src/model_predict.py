@@ -59,10 +59,6 @@ def get_combined_forecasts(date):
     forecasts = get_forecasts(date)
     forecasts = [convert_columns_to_int(df) for df in forecasts]
 
-    for i, df in enumerate(forecasts):
-        print(f"Forecast {i} columns: {df.columns}")
-        print(f"Forecast {i} datatypes: {df.dtypes}")
-
     df_handler = combine(dataframes=forecasts, get_handler=True)
     df_handler.initialize(avg_temp=True, create_dates=True,
                           to_periodic=True, normalize=True, drop_columns=True, decay=False)
@@ -72,13 +68,6 @@ def get_combined_forecasts(date):
 def get_combined_history(x=5):
     history = get_prev_x_days(x)
     history = [convert_columns_to_int(df) for df in history]
-
-    for i, df in enumerate(history):
-        print(f"History {i} columns: {df.columns}")
-        print(f"History {i} datatypes: {df.dtypes}")
-
-    # df = combine(dataframes=history, get_handler=False)
-    # return df
 
     df_handler = combine(dataframes=history, get_handler=True)
     df_handler.initialize(avg_temp=True, create_dates=True,
@@ -153,32 +142,20 @@ def interpolate_missing_co2(df):
     return df.rename(columns={'minute': 'min'})
 
 
-if __name__ == "__main__":
-
-    # df = simulate_co2_data()
-    # print(df.head(10))
-    # print(df.tail(10))
-    # print(df.dtypes)
-
-    # co2 = co2_get_prev_x_days()
-    # print(co2.head(24))
-    # print(co2.shape)
-    print("printouts from main:")
-
+def get_forecasts_and_predict():
     today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
     tomorrow = today + timedelta(days=1)
     print(f"tomorrow: {tomorrow}")
     combined_forecasts = get_combined_forecasts(tomorrow)
-    print(f"combined_forecasts: {combined_forecasts.head(24)}")
-
     combined_history = get_combined_history()
+    model = perform_linear_regression(combined_history, 'CO2', print_=False)
+    predicted_co2 = predict_co2(model, combined_forecasts, print_=False)
 
-    print(combined_history.head(24))
-    print(combined_history.tail(24))
-    print(combined_history.shape)
-    print(combined_history.dtypes)
+    return predicted_co2
 
-    model = perform_linear_regression(combined_history, 'CO2', print_=True)
-    predict_co2 = predict_co2(model, combined_forecasts, print_=True)
 
-    print(predict_co2)
+if __name__ == "__main__":
+
+    prediction = get_forecasts_and_predict()
+    print("printout from main")
+    print(prediction)
