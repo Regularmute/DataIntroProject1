@@ -117,8 +117,9 @@ def perform_linear_regression(df, dependent_var, print_=True):
     df = df.dropna(subset=[dependent_var])
 
     X = df.drop(columns=[dependent_var, 'date', 'hour'])
-
     X = sm.add_constant(X, has_constant='add')
+    X = X.astype(float)
+
     y = df[dependent_var]
     if print_:
         print("TRAINING features ==================================")
@@ -245,7 +246,7 @@ def predict_co2_for_day(model, df, date, print_=True):
         print(f"day_data: {day_data}")
     y_actual = day_data['CO2']
     X_day = day_data.drop(columns=['CO2', 'date', 'hour'])
-    X_day = sm.add_constant(X_day)
+    # X_day = sm.add_constant(X_day)
     X_day = sm.add_constant(X_day, has_constant='add')
 
     if print_:
@@ -284,6 +285,28 @@ def predict_co2_for_day(model, df, date, print_=True):
     if print_:
         print("fails before this?")
     return y_actual, y_pred
+
+
+def predict_co2(model, exog_data, print_=True):
+    """Predict CO2 emissions using the trained model."""
+    exog_data = sm.add_constant(exog_data, has_constant='add')
+    exog_data.drop(columns=['date', 'hour'], inplace=True)
+
+    if print_:
+        print(f"Exog data shape: {exog_data.shape}")
+        print(f"Exog data columns: {exog_data.columns}")
+
+    co2_pred = model.predict(exog_data)
+    hours = list(range(len(co2_pred)))
+    prediction_df = pd.DataFrame({
+        'Hour': hours,
+        'Predicted CO2': co2_pred,
+
+    })
+    prediction_df['Rank'] = prediction_df['Predicted CO2'].rank(
+        method='min').astype(int)
+
+    return prediction_df
 
 
 def compare_predictions(y_actual, y_pred, print_=True):

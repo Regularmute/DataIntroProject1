@@ -105,7 +105,32 @@ def wind_prod_get_prev_x_days(x=5):
                                                         23, 59)
         historical_elec_wind_prod_df = get_dataframe_by_url(
             historical_elec_wind_prod_url)
+        historical_elec_wind_prod_df.rename(
+            columns={'value': 'wind'}, inplace=True)
         return historical_elec_wind_prod_df
+    except Exception as e:
+        raise e
+
+
+def co2_get_prev_x_days(x=5):
+    end_time = datetime.now().replace(hour=23, minute=0, second=0,
+                                      microsecond=0) - timedelta(days=1)
+
+    start_time = end_time.replace(
+        hour=0, minute=0, second=0, microsecond=0) - timedelta(days=4)
+    try:
+        historical_co2_url = get_fingrid_url(266,
+                                             start_time.year,
+                                             start_time.month,
+                                             start_time.day,
+                                             0, 0,
+                                             end_time.year,
+                                             end_time.month,
+                                             end_time.day,
+                                             23, 59)
+        historical_co2_df = get_dataframe_by_url(historical_co2_url)
+        historical_co2_df.rename(columns={'value': 'CO2'}, inplace=True)
+        return historical_co2_df
     except Exception as e:
         raise e
 
@@ -129,6 +154,8 @@ def sun_prod_get_prev_x_days(x=5):
                                                        23, 59)
         historical_elec_sun_prod_df = get_dataframe_by_url(
             historical_elec_sun_prod_url)
+        historical_elec_sun_prod_df.rename(
+            columns={'value': 'solar prediction'}, inplace=True)
         return historical_elec_sun_prod_df
     except Exception as e:
         raise e
@@ -168,7 +195,7 @@ def get_prices_for_last_x_days(x=5):
     df_all_days['hour'] = df_all_days['time_start'].dt.hour
 
     # convert unit and add VAT (to be comparable with other data)
-    df_all_days['price'] = (
+    df_all_days['electricity_cost'] = (
         df_all_days['EUR_per_kWh']*100*1.255).astype(float)
 
     df_all_days.drop(
