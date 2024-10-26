@@ -30,6 +30,9 @@ def get_forecasts(date):
     # # forecast is not available before 14:00, this line is only to allow functionality testint
     # elec_prices_forecast = simulate_el_prices_forecast(date)
     # REMOVE ABOVE LINE - FOR TESTING ONLY
+    if (elec_prices_forecast.empty):
+        print("Error with tomorrow's data")
+        return []
 
     return [weather_forecast, wind_prod_forecast, sun_prod_forecast, elec_prices_forecast]
 
@@ -57,6 +60,8 @@ def convert_columns_to_int(df):
 
 def get_combined_forecasts(date):
     forecasts = get_forecasts(date)
+    if forecasts == []:
+        return pd.DataFrame()
     forecasts = [convert_columns_to_int(df) for df in forecasts]
 
     df_handler = combine(dataframes=forecasts, get_handler=True)
@@ -142,11 +147,12 @@ def interpolate_missing_co2(df):
     return df.rename(columns={'minute': 'min'})
 
 
-def get_forecasts_and_predict():
-    today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-    tomorrow = today + timedelta(days=1)
-    print(f"tomorrow: {tomorrow}")
-    combined_forecasts = get_combined_forecasts(tomorrow)
+def get_forecasts_and_predict(date):
+    combined_forecasts = get_combined_forecasts(date)
+    if combined_forecasts.empty:
+        print("Error with tomorrow's data")
+        return pd.DataFrame()
+
     combined_history = get_combined_history()
     model = perform_linear_regression(combined_history, 'CO2', print_=False)
     predicted_co2 = predict_co2(model, combined_forecasts, print_=False)

@@ -43,11 +43,12 @@ def get_forecast_sun_prod(date):
 
 
 def get_forecast_elec_prices(date):
-    predicted_elec_prices_url = 'https://api.porssisahko.net/v1/latest-prices.json'
+    [year, month, day] = date.year, date.month, date.day
+    predicted_elec_prices_url = f"https://www.sahkonhintatanaan.fi/api/v1/prices/{year}/{month}-{day}.json"
     predicted_elec_prices_df = get_elec_pred_by_url_and_date(
-        predicted_elec_prices_url, date.strftime('%Y-%m-%d'))
+        predicted_elec_prices_url)
     predicted_elec_prices_df.rename(
-        columns={'price': 'electricity_cost'}, inplace=True)
+        columns={'EUR_per_kWh': 'electricity_cost'}, inplace=True)
     return predicted_elec_prices_df
 
 
