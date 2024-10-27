@@ -33,8 +33,8 @@ def get_dataframe_by_url(url):
         return (df)
     else:
         print("Error", r.status_code)
-        result_json = r.json()
-        print(result_json)
+        # result_json = r.json()
+        # print(result_json)
 
 
 def load_fingrid_data():

@@ -45,6 +45,8 @@ def get_forecast_sun_prod(date):
 def get_forecast_elec_prices(date):
     [year, month, day] = date.year, date.month, date.day
     predicted_elec_prices_url = f"https://www.sahkonhintatanaan.fi/api/v1/prices/{year}/{month}-{day}.json"
+    # hardcoded for testing REMOVE
+    # predicted_elec_prices_url = f"https://www.sahkonhintatanaan.fi/api/v1/prices/2024/10-29.json"
     predicted_elec_prices_df = get_elec_pred_by_url_and_date(
         predicted_elec_prices_url)
     predicted_elec_prices_df.rename(
