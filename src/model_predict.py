@@ -148,16 +148,22 @@ def interpolate_missing_co2(df):
 
 
 def get_forecasts_and_predict(date):
-    combined_forecasts = get_combined_forecasts(date)
-    if combined_forecasts.empty:
-        print("Error with tomorrow's data")
+    print(f"getting forecasts and predict for date {date}")
+    try:
+        combined_forecasts = get_combined_forecasts(date)
+        if combined_forecasts.empty:
+            print("Error with tomorrow's data")
+            return pd.DataFrame()
+
+        combined_history = get_combined_history()
+        model = perform_linear_regression(
+            combined_history, 'CO2', print_=False)
+        predicted_co2 = predict_co2(model, combined_forecasts, print_=False)
+
+        return predicted_co2
+    except Exception as e:
+        print(f"Error: {e}")
         return pd.DataFrame()
-
-    combined_history = get_combined_history()
-    model = perform_linear_regression(combined_history, 'CO2', print_=False)
-    predicted_co2 = predict_co2(model, combined_forecasts, print_=False)
-
-    return predicted_co2
 
 
 if __name__ == "__main__":
