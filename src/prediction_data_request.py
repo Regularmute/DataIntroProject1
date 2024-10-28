@@ -188,7 +188,10 @@ def get_prices_for_last_x_days(x=5):
 
         if prices_data:
             df_day = pd.DataFrame(prices_data)
-            df_all_days = pd.concat([df_all_days, df_day], ignore_index=True)
+
+            if df_day.shape[0] == 24:
+                df_all_days = pd.concat(
+                    [df_all_days, df_day], ignore_index=True)
 
     df_all_days['time_start'] = pd.to_datetime(df_all_days['time_start'])
     df_all_days['timestamp'] = df_all_days['time_start']
