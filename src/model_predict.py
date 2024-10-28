@@ -74,10 +74,36 @@ def get_combined_history(x=5):
     history = get_prev_x_days(x)
     history = [convert_columns_to_int(df) for df in history]
 
-    df_handler = combine(dataframes=history, get_handler=True)
+    year_to_remove = 2024
+    month_to_remove = 10
+    day_to_remove = 27
+
+    filtered_history = []
+    for df in history:
+        filtered_df = df[
+            ~((df['year'] == year_to_remove) &
+              (df['month'] == month_to_remove) &
+              (df['day'] == day_to_remove))
+        ]
+        filtered_history.append(filtered_df)
+
+    df_handler = combine(dataframes=filtered_history, get_handler=True)
     df_handler.initialize(avg_temp=True, create_dates=True,
                           to_periodic=True, normalize=True, drop_columns=True, decay=False)
     return df_handler.get_initialized_dataframe()
+
+
+# def get_combined_history(x=5):
+#     print("getting combined history")
+#     history = get_prev_x_days(x)
+#     history = [convert_columns_to_int(df) for df in history]
+#     print("history collected")
+
+#     df_handler = combine(dataframes=history, get_handler=True)
+#     df_handler.initialize(avg_temp=True, create_dates=True,
+#                           to_periodic=True, normalize=True, drop_columns=True, decay=False)
+#     print("datahandler initialized")
+#     return df_handler.get_initialized_dataframe()
 
 
 def simulate_co2_data():
@@ -148,7 +174,6 @@ def interpolate_missing_co2(df):
 
 
 def get_forecasts_and_predict(date):
-    print(f"getting forecasts and predict for date {date}")
     try:
         combined_forecasts = get_combined_forecasts(date)
         if combined_forecasts.empty:
